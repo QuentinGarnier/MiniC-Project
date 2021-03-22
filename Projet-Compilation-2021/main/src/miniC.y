@@ -1,5 +1,9 @@
 %{
+	#include <stdio.h>
+	#include <stdlib.h>
 %}
+
+
 %token IDENTIFICATEUR CONSTANTE VOID INT FOR WHILE IF ELSE SWITCH CASE DEFAULT
 %token BREAK RETURN PLUS MOINS MUL DIV LSHIFT RSHIFT BAND BOR LAND LOR LT GT 
 %token GEQ LEQ EQ NEQ NOT EXTERN
@@ -13,6 +17,8 @@
 %left OP
 %left REL
 %start programme
+
+
 %%
 programme	:	
 		liste_declarations liste_fonctions
@@ -141,3 +147,14 @@ binary_comp	:
 	|	NEQ
 ;
 %%
+
+int yyerror(char *s) {
+	fprintf(stderr, "%s\n", s);
+	exit(1);
+}
+
+/*
+int main() {
+	yyparse();
+}
+*/
