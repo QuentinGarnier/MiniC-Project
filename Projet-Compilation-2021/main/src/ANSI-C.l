@@ -5,72 +5,61 @@ E                       [Ee][+-]?{D}+
 FS                      (f|F|l|L)
 IS                      (u|U|l|L)*
 
+%s                      COMMENT
+
+
 %{
 #include <stdio.h>
 #include "y.tab.h"
-
-
-/* Supprimer les lignes dont vous n'avez pas besoin. */
-
 %}
 
+
 %%
-\/\*([^*]|[\n]|(\*+([^*/]|[\n])))*\*+\/    { printf("Comment...\n"); }
+"/*"                    { BEGIN COMMENT; }
+<COMMENT>(.|\n)         ;
+<COMMENT>"*/"           { BEGIN 0; }
 
-"break"                 { printf("break\n"); /* Plus tard : return(BREAK) avec BREAK un token de miniC.y */ }
-"case"                  { printf("case\n"); }
-"default"               { printf("default\n"); }
-"else"                  { printf("else\n"); }
-"extern"                { printf("extern\n"); }
-"for"                   { printf("for\n"); }
-"if"                    { printf("if\n"); }
-"int"                   { printf("int\n"); }
-"return"                { printf("return\n"); }
-"switch"                { printf("switch\n"); }
-"void"                  { printf("void\n"); }
-"while"                 { printf("while\n"); }
 
-{L}({L}|{D})*           { printf("IDENTIFIER\n"); }
+<INITIAL>{
+"break"                 { return BREAK; }
+"case"                  { return CASE; }
+"default"               { return DEFAULT; }
+"else"                  { return ELSE; }
+"extern"                { return EXTERN; }
+"for"                   { return FOR; }
+"if"                    { return IF; }
+"int"                   { return INT; }
+"return"                { return RETURN; }
+"switch"                { return SWITCH; }
+"then"                  { return THEN; }
+"void"                  { return VOID; }
+"while"                 { return WHILE; }
 
-0[xX]{H}+{IS}?          { printf("test1?\n"); }
-0{D}+{IS}?              { printf("test2?\n"); }
-{D}+{IS}?               { printf("NUMBER?\n"); }
-L?'(\\.|[^\\'])+'       { printf("test4?\n"); }
+{L}({L}|{D})*           { return IDENTIFICATEUR; /* printf("%s\n", yytext); */ }
 
-{D}+{E}{FS}?            { printf("test5?\n"); }
+{D}+                    { return CONSTANTE; }
 
-L?\"(\\.|[^\\"])*\"     { printf("test8?\n"); }
+"<="                    { return LEQ; }
+">="                    { return GEQ; }
+"=="                    { return EQ; }
+"!="                    { return NEQ; }
+"<"                     { return LT; }
+">"                     { return GT; }
+"!"                     { return NOT; }
+"&&"                    { return LAND;  /* Logical AND */ }
+"||"                    { return LOR;   /* Logical OR */  }
 
-"..."                   { printf("test??\n"); }
-">>="                   { /* A completer */ }
-"<<="                   { /* A completer */ }
-"+="                    { /* A completer */ }
-"-="                    { /* A completer */ }
-"*="                    { /* A completer */ }
-"/="                    { /* A completer */ }
-"%="                    { /* A completer */ }
-"&="                    { /* A completer */ }
-"^="                    { /* A completer */ }
-"|="                    { /* A completer */ }
-">>"                    { printf("Bit op\n"); }
-"<<"                    { printf("Bit op\n"); }
-"++"                    { /* A completer */ }
-"--"                    { /* A completer */ }
-"->"                    { /* A completer */ }
+"+"                     { return PLUS; }
+"-"                     { return MOINS; }
+"*"                     { return MUL; }
+"/"                     { return DIV; }
+"&"                     { return BAND;  /* Bitwise AND */ }
+"|"                     { return BOR;   /* Bitwise OR */  }
+">>"                    { return RSHIFT; }
+"<<"                    { return LSHIFT; }
 
-"&&"                    { /* A completer */ }
-"||"                    { /* A completer */ }
-"<="                    { printf("Inferior, or equal\n"); }
-">="                    { printf("Superior, or equal\n"); }
-"=="                    { /* A completer */ }
-"!="                    { /* A completer */ }
-
-[ \t\v\n\f]             { /* A completer */ }
+[ \t\v\n\f]             { /* A completer ! XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */ }
 .                       { return yytext[0]; }
-%%
-
-int main()
-{
-	while(1) yylex();
-	printf("END OF FILE!\n"); /* CTRL - D pour quitter quand on écrit */
 }
+
+%%

@@ -148,13 +148,21 @@ binary_comp	:
 ;
 %%
 
+
+
 int yyerror(char *s) {
 	fprintf(stderr, "%s\n", s);
 	exit(1);
 }
 
-/*
+
 int main() {
 	yyparse();
+
+	/* MAIN autrefois dans le.l :
+	 * while(1) yylex();
+	 * printf("END OF FILE!\n");
+	 */
+
+	/* Rappel : CTRL - D pour quitter quand on écrit */
 }
-*/
