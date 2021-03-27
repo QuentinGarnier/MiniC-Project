@@ -58,7 +58,7 @@ IS                      (u|U|l|L)*
 ">>"                    { return RSHIFT; }
 "<<"                    { return LSHIFT; }
 
-[ \t\v\n\f]             { /* A completer ! XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */ }
+[ \t\v\n\f]             ;
 .                       { return yytext[0]; }
 }
 
