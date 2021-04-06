@@ -35,7 +35,7 @@ IS                      (u|U|l|L)*
 "void"                  { return VOID; }
 "while"                 { return WHILE; }
 
-{L}({L}|{D})*           { return IDENTIFICATEUR; /* printf("%s\n", yytext); */ }
+{L}({L}|{D})*           { yylval = strdup(yytext); return IDENTIFICATEUR; /* printf("%s\n", yytext); */ }
 
 {D}+                    { return CONSTANTE; }
 

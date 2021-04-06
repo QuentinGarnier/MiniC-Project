@@ -1,6 +1,9 @@
 %{
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include "nodes.h"
+
+	Node *root;
 %}
 
 
@@ -21,130 +24,134 @@
 
 %%
 programme	:	
-		liste_declarations liste_fonctions
+		liste_declarations liste_fonctions																{/*root = createNode("root", $2, NULL);*/}
 ;
 liste_declarations	:	
-		liste_declarations declaration 
-	|	
+		liste_declarations declaration 																	{}
+	|																									{}
 ;
 liste_fonctions	:	
-		liste_fonctions fonction
-|               fonction
+		liste_fonctions fonction 																		{/*$$ = setBrother($2, $1);*/}
+|               fonction 																				{/*$$ = $1;*/}
 ;
 declaration	:	
-		type liste_declarateurs ';'
+		type liste_declarateurs ';' 																	{}
 ;
 liste_declarateurs	:	
-		liste_declarateurs ',' declarateur
-	|	declarateur
+		liste_declarateurs ',' declarateur 																{}
+	|	declarateur 																					{}
 ;
 declarateur	:	
-		IDENTIFICATEUR
-	|	declarateur '[' CONSTANTE ']'
+		IDENTIFICATEUR 																					{}
+	|	declarateur '[' CONSTANTE ']' 																	{}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}'
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';'
+		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{/*$$ = createNode(buildStr($2, buildStr(", ", $1)), $8, NULL);*/}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{/*$$ = createNode("", NULL, NULL);*/}
 ;
 type	:	
-		VOID
-	|	INT
+		VOID 																							{/*$$ = "void";*/}
+	|	INT 																							{/*$$ = "int";*/}
 ;
 liste_parms	:	
-		liste_parms_content
-	|	
+		liste_parms_content 																			{}
+	|																									{}
 ;
 liste_parms_content	:
-		liste_parms_content ',' parm
-	|	parm
+		liste_parms_content ',' parm 																	{}
+	|	parm 																							{}
 ;
 parm	:	
-		INT IDENTIFICATEUR
+		INT IDENTIFICATEUR 																				{}
 ;
 liste_instructions :	
-		liste_instructions instruction
-	|
+		liste_instructions instruction 																	{}
+	| 																									{}
 ;
 instruction	:	
-		iteration
-	|	selection
-	|	saut
-	|	affectation ';'
-	|	bloc
-	|	appel
+		iteration 																						{}
+	|	selection 																						{}
+	|	saut 																							{}
+	|	affectation ';' 																				{}
+	|	bloc 																							{}
+	|	appel 																							{}
 ;
 iteration	:	
-		FOR '(' affectation ';' condition ';' affectation ')' instruction
-	|	WHILE '(' condition ')' instruction
+		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{}
+	|	WHILE '(' condition ')' instruction 															{}
 ;
 selection	:	
-		IF '(' condition ')' instruction %prec THEN
-	|	IF '(' condition ')' instruction ELSE instruction
-	|	SWITCH '(' expression ')' instruction
-	|	CASE CONSTANTE ':' instruction
-	|	DEFAULT ':' instruction
+		IF '(' condition ')' instruction %prec THEN 													{}
+	|	IF '(' condition ')' instruction ELSE instruction 												{}
+	|	SWITCH '(' expression ')' instruction 															{}
+	|	CASE CONSTANTE ':' instruction 																	{}
+	|	DEFAULT ':' instruction 																		{}
 ;
 saut	:	
-		BREAK ';'
-	|	RETURN ';'
-	|	RETURN expression ';'
+		BREAK ';' 																						{}
+	|	RETURN ';' 																						{}
+	|	RETURN expression ';' 																			{}
 ;
 affectation	:	
-		variable '=' expression
+		variable '=' expression 																		{/*$$ = createBinNode(":=", $1, $3);*/}
 ;
 bloc	:	
-		'{' liste_declarations liste_instructions '}'
+		'{' liste_declarations liste_instructions '}' 													{}
 ;
 appel	:	
-		IDENTIFICATEUR '(' liste_expressions ')' ';'
+		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{}
 ;
 variable	:	
-		IDENTIFICATEUR
-	|	variable '[' expression ']'
+		IDENTIFICATEUR 																					{/*$$ = createNode($1, NULL, NULL);*/}
+	|	variableTab '[' expression ']' 																	{/*$$ = addNewSon($1, $3);*/}
+;
+variableTab	:	
+		IDENTIFICATEUR 																					{/*$$ = createNode("tab", $1, NULL);*/}
+	|	variableTab '[' expression ']' 																	{/*$$ = addNewSon($1, $3);*/}
 ;
 expression	:	
-		'(' expression ')'
-	|	expression binary_op expression %prec OP
-	|	MOINS expression
-	|	CONSTANTE
-	|	variable
-	|	IDENTIFICATEUR '(' liste_expressions ')'
+		'(' expression ')' 																				{}
+	|	expression binary_op expression %prec OP 														{}
+	|	MOINS expression 																				{}
+	|	CONSTANTE 																						{}
+	|	variable 																						{}
+	|	IDENTIFICATEUR '(' liste_expressions ')' 														{}
 ;
 liste_expressions	:	
-		liste_expressions_content
-	|
+		liste_expressions_content 																		{}
+	| 																									{}
 ;
 liste_expressions_content	:
-		liste_expressions_content ',' expression
-	|	expression
+		liste_expressions_content ',' expression 														{}
+	|	expression 																						{}
 ;
 condition	:	
-		NOT '(' condition ')'
-	|	condition binary_rel condition %prec REL
-	|	'(' condition ')'
-	|	expression binary_comp expression
+		NOT '(' condition ')' 																			{}
+	|	condition binary_rel condition %prec REL 														{}
+	|	'(' condition ')' 																				{}
+	|	expression binary_comp expression 																{}
 ;
 binary_op	:	
-		PLUS
-	|       MOINS
-	|	MUL
-	|	DIV
-	|       LSHIFT
-	|       RSHIFT
-	|	BAND
-	|	BOR
+		PLUS 																							{}
+	|       MOINS 																						{}
+	|	MUL 																							{}
+	|	DIV 																							{}
+	|       LSHIFT 																						{}
+	|       RSHIFT 																						{}
+	|	BAND 																							{}
+	|	BOR 																							{}
 ;
 binary_rel	:	
-		LAND
-	|	LOR
+		LAND 																							{}
+	|	LOR 																							{}
 ;
 binary_comp	:	
-		LT
-	|	GT
-	|	GEQ
-	|	LEQ
-	|	EQ
-	|	NEQ
+		LT 																								{}
+	|	GT 																								{}
+	|	GEQ 																							{}
+	|	LEQ 																							{}
+	|	EQ 																								{}
+	|	NEQ 																							{}
 ;
 %%
 
@@ -158,6 +165,8 @@ int yyerror(char *s) {
 
 int main() {
 	yyparse();
+
+
 
 	/* MAIN autrefois dans le.l :
 	 * while(1) yylex();
