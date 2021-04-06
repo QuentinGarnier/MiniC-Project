@@ -65,56 +65,56 @@ parm	:
 		INT IDENTIFICATEUR 																				{}
 ;
 liste_instructions :	
-		liste_instructions instruction 																	{}
-	| 																									{}
+		liste_instructions instruction 																	{/*$$ = setBrother($2, $1);*/}
+	| 																									{/*$$ = NULL;*/}
 ;
 instruction	:	
-		iteration 																						{}
-	|	selection 																						{}
-	|	saut 																							{}
-	|	affectation ';' 																				{}
-	|	bloc 																							{}
-	|	appel 																							{}
+		iteration 																						{/*$$ = $1;*/}
+	|	selection 																						{/*$$ = $1;*/}
+	|	saut 																							{/*$$ = $1;*/}
+	|	affectation ';' 																				{/*$$ = $1;*/}
+	|	bloc 																							{/*$$ = $1;*/}
+	|	appel 																							{/*$$ = $1;*/}
 ;
 iteration	:	
-		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{}
-	|	WHILE '(' condition ')' instruction 															{}
+		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{/*$$ = createBinNode("FOR", $3, setBrother($5, setBrother($7, $9)));*/}
+	|	WHILE '(' condition ')' instruction 															{/*$$ = createBinNode("WHILE", $3, $5);*/}
 ;
 selection	:	
-		IF '(' condition ')' instruction %prec THEN 													{}
-	|	IF '(' condition ')' instruction ELSE instruction 												{}
-	|	SWITCH '(' expression ')' instruction 															{}
-	|	CASE CONSTANTE ':' instruction 																	{}
-	|	DEFAULT ':' instruction 																		{}
+		IF '(' condition ')' instruction %prec THEN 													{/*$$ = createBinNode("IF", $3, $5);*/}
+	|	IF '(' condition ')' instruction ELSE instruction 												{/*$$ = createBinNode("IF", $3, setBrother($5, $7));*/}
+	|	SWITCH '(' expression ')' instruction 															{/*$$ = createBinNode("SWITCH", $3, $5);*/}
+	|	CASE CONSTANTE ':' instruction 																	{/*$$ = $4;*/}
+	|	DEFAULT ':' instruction 																		{/*$$ = $3;*/}
 ;
 saut	:	
-		BREAK ';' 																						{}
-	|	RETURN ';' 																						{}
-	|	RETURN expression ';' 																			{}
+		BREAK ';' 																						{/*$$ = createLeaf("BREAK");*/}
+	|	RETURN ';' 																						{/*$$ = createLeaf("RETURN");*/}
+	|	RETURN expression ';' 																			{/*$$ = createNode("RETURN", $2, NULL);*/}
 ;
 affectation	:	
 		variable '=' expression 																		{/*$$ = createBinNode(":=", $1, $3);*/}
 ;
 bloc	:	
-		'{' liste_declarations liste_instructions '}' 													{}
+		'{' liste_declarations liste_instructions '}' 													{/*$$ = createNode("BLOC", $3, NULL);*/}
 ;
 appel	:	
 		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{}
 ;
 variable	:	
-		IDENTIFICATEUR 																					{/*$$ = createNode($1, NULL, NULL);*/}
+		IDENTIFICATEUR 																					{/*$$ = createLeaf($1);*/}
 	|	variableTab '[' expression ']' 																	{/*$$ = addNewSon($1, $3);*/}
 ;
 variableTab	:	
-		IDENTIFICATEUR 																					{/*$$ = createNode("tab", $1, NULL);*/}
+		IDENTIFICATEUR 																					{/*$$ = createNode("TAB", $1, NULL);*/}
 	|	variableTab '[' expression ']' 																	{/*$$ = addNewSon($1, $3);*/}
 ;
 expression	:	
-		'(' expression ')' 																				{}
-	|	expression binary_op expression %prec OP 														{}
-	|	MOINS expression 																				{}
-	|	CONSTANTE 																						{}
-	|	variable 																						{}
+		'(' expression ')' 																				{/*$$ = $2;*/}
+	|	expression binary_op expression %prec OP 														{/*$$ = createBinNode($2, $1, $3);*/}
+	|	MOINS expression 																				{/*$$ = createNode("-", $2, NULL);*/}
+	|	CONSTANTE 																						{/*$$ = createLeaf($1);*/}
+	|	variable 																						{/*$$ = $1;*/}
 	|	IDENTIFICATEUR '(' liste_expressions ')' 														{}
 ;
 liste_expressions	:	
@@ -126,32 +126,32 @@ liste_expressions_content	:
 	|	expression 																						{}
 ;
 condition	:	
-		NOT '(' condition ')' 																			{}
-	|	condition binary_rel condition %prec REL 														{}
-	|	'(' condition ')' 																				{}
-	|	expression binary_comp expression 																{}
+		NOT '(' condition ')' 																			{/*$$ = createNode("!", $3, NULL);*/}
+	|	condition binary_rel condition %prec REL 														{/*$$ = createBinNode($2, $1, $2);*/}
+	|	'(' condition ')' 																				{/*$$ = $2;*/}
+	|	expression binary_comp expression 																{/*$$ = createBinNode($2, $1, $2);*/}
 ;
 binary_op	:	
-		PLUS 																							{}
-	|       MOINS 																						{}
-	|	MUL 																							{}
-	|	DIV 																							{}
-	|       LSHIFT 																						{}
-	|       RSHIFT 																						{}
-	|	BAND 																							{}
-	|	BOR 																							{}
+		PLUS 																							{/*$$ = "+";*/}
+	|       MOINS 																						{/*$$ = "-";*/}
+	|	MUL 																							{/*$$ = "*";*/}
+	|	DIV 																							{/*$$ = "/";*/}
+	|       LSHIFT 																						{/*$$ = "<<";*/}
+	|       RSHIFT 																						{/*$$ = ">>";*/}
+	|	BAND 																							{/*$$ = "&";*/}
+	|	BOR 																							{/*$$ = "|";*/}
 ;
 binary_rel	:	
-		LAND 																							{}
-	|	LOR 																							{}
+		LAND 																							{/*$$ = "&&";*/}
+	|	LOR 																							{/*$$ = "||";*/}
 ;
 binary_comp	:	
-		LT 																								{}
-	|	GT 																								{}
-	|	GEQ 																							{}
-	|	LEQ 																							{}
-	|	EQ 																								{}
-	|	NEQ 																							{}
+		LT 																								{/*$$ = "<";*/}
+	|	GT 																								{/*$$ = ">";*/}
+	|	GEQ 																							{/*$$ = ">=";*/}
+	|	LEQ 																							{/*$$ = "<=";*/}
+	|	EQ 																								{/*$$ = "==";*/}
+	|	NEQ 																							{/*$$ = "!=";*/}
 ;
 %%
 

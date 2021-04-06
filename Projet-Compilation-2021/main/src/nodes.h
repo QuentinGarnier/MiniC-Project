@@ -28,6 +28,11 @@ Node *createBinNode(char *v, Node *s, Node *b)
 	return n;
 }
 
+Node *createLeaf(char *v)
+{
+    return createNode(v, NULL, NULL);
+}
+
 Node *setBrother(Node *n, Node *b)
 {
     n->nodeBrother = b;
