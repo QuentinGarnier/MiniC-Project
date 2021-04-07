@@ -38,7 +38,7 @@ IS                      (u|U|l|L)*
 
 {L}({L}|{D})*           { yylval.str = strdup(yytext); return IDENTIFICATEUR; /* printf("%s\n", yytext); */ }
 
-{D}+                    { return CONSTANTE; }
+{D}+                    { yylval.integer = atoi(yytext); return CONSTANTE; }
 
 "<="                    { return LEQ; }
 ">="                    { return GEQ; }
@@ -71,6 +71,17 @@ Node *createNode(char *v, Node *s, Node *b)
     n->value = strdup(v);
     n->nodeSon = s;
     n->nodeBrother = b;
+    n->nodeType = CLASSIC_T;
+    return n;
+}
+
+Node *createNodeTyped(char *v, Node *s, Node *b, NodeType nt)
+{
+    Node *n = malloc(sizeof(Node));
+    n->value = strdup(v);
+    n->nodeSon = s;
+    n->nodeBrother = b;
+    n->nodeType = nt;
     return n;
 }
 
@@ -107,4 +118,32 @@ char *buildStr(char *str1, char *str2)
     strcpy(res,str1);
     strcat(res,str2);
     return res;
+}
+
+void nodeToDot(FILE* file, Node *n, int *id, int fatherID)
+{
+    int tmp = *id;
+    if(fatherID >= 0) fprintf(file, "\tn_%d [label=\"%s\" shape=ellipse color=black];\n", *id, n->value);
+    if(fatherID > 0) fprintf(file, "\tn_%d -> n_%d;\n", fatherID, *id);
+    *id = *id + 1;
+    if(n->nodeBrother != NULL) {
+        nodeToDot(file, n->nodeBrother, id, fatherID);
+    }
+    if(n->nodeSon != NULL) {
+        nodeToDot(file, n->nodeSon, id, tmp);
+    }
+}
+
+void buildTree(Node *root)
+{
+    FILE* file = NULL;
+    file = fopen("graph.dot", "w");
+    if(file == NULL) printf("Failed to open the file 'graph.dot'.");
+    else {
+        int id = 0;
+        fprintf(file, "digraph G {\n");
+        nodeToDot(file, root, &id, -1);
+        fprintf(file, "}");
+        fclose(file);
+    }
 }

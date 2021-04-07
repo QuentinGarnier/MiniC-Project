@@ -7,7 +7,8 @@
 %}
 
 
-%token <str> IDENTIFICATEUR CONSTANTE VOID INT FOR WHILE IF ELSE SWITCH CASE DEFAULT
+%token <str> IDENTIFICATEUR VOID INT FOR WHILE IF ELSE SWITCH CASE DEFAULT
+%token <integer> CONSTANTE
 %token <str> BREAK RETURN PLUS MOINS MUL DIV LSHIFT RSHIFT BAND BOR LAND LOR LT GT 
 %token <str> GEQ LEQ EQ NEQ NOT EXTERN
 %left PLUS MOINS
@@ -22,6 +23,7 @@
 %start programme
 
 %union{
+	int integer;
 	char *str;
 	Node *node;
 }
@@ -31,7 +33,7 @@
 
 %%
 programme	:	
-		liste_declarations liste_fonctions																{root = createNode("root", $2, $1);}
+		liste_declarations liste_fonctions																{root = createBinNode("root", $2, $1);}
 ;
 liste_declarations	:	
 		liste_declarations declaration 																	{$$ = NULL; /* === TODO! === */}
@@ -120,7 +122,7 @@ expression	:
 		'(' expression ')' 																				{$$ = $2;}
 	|	expression binary_op expression %prec OP 														{$$ = createBinNode($2, $1, $3);}
 	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
-	|	CONSTANTE 																						{$$ = createLeaf($1);}
+	|	CONSTANTE 																						{char s[10]; sprintf(s, "%d", $1); $$ = createLeaf(s);}
 	|	variable 																						{$$ = $1;}
 	|	IDENTIFICATEUR '(' liste_expressions ')' 														{$$ = createNode($1, $3, NULL);}
 ;
@@ -172,4 +174,6 @@ int yyerror(char *s) {
 
 int main() {
 	yyparse();
+	buildTree(root);
+	return 0;
 }
