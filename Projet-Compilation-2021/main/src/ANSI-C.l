@@ -10,6 +10,7 @@ IS                      (u|U|l|L)*
 
 %{
 #include <stdio.h>
+#include "nodes.h"
 #include "y.tab.h"
 %}
 
@@ -35,7 +36,7 @@ IS                      (u|U|l|L)*
 "void"                  { return VOID; }
 "while"                 { return WHILE; }
 
-{L}({L}|{D})*           { yylval = strdup(yytext); return IDENTIFICATEUR; /* printf("%s\n", yytext); */ }
+{L}({L}|{D})*           { yylval.str = strdup(yytext); return IDENTIFICATEUR; /* printf("%s\n", yytext); */ }
 
 {D}+                    { return CONSTANTE; }
 
@@ -63,3 +64,47 @@ IS                      (u|U|l|L)*
 }
 
 %%
+
+Node *createNode(char *v, Node *s, Node *b)
+{
+    Node *n = malloc(sizeof(Node));
+    n->value = strdup(v);
+    n->nodeSon = s;
+    n->nodeBrother = b;
+    return n;
+}
+
+Node *createBinNode(char *v, Node *s, Node *b)
+{
+    Node *n = malloc(sizeof(Node));
+    n->value = strdup(v);
+    n->nodeSon = s;
+    n->nodeBrother = NULL;
+    n->nodeSon->nodeBrother = b;
+    return n;
+}
+
+Node *createLeaf(char *v)
+{
+    return createNode(v, NULL, NULL);
+}
+
+Node *setBrother(Node *n, Node *b)
+{
+    n->nodeBrother = b;
+    return n;
+}
+
+Node *addNewSon(Node *n, Node *s)
+{
+    n->nodeSon->nodeBrother = s;
+    return n;
+}
+
+char *buildStr(char *str1, char *str2)
+{
+    char *res = (char *)malloc(strlen(str1) + strlen(str2) + 1);
+    strcpy(res,str1);
+    strcat(res,str2);
+    return res;
+}

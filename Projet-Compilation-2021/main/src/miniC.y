@@ -7,9 +7,9 @@
 %}
 
 
-%token IDENTIFICATEUR CONSTANTE VOID INT FOR WHILE IF ELSE SWITCH CASE DEFAULT
-%token BREAK RETURN PLUS MOINS MUL DIV LSHIFT RSHIFT BAND BOR LAND LOR LT GT 
-%token GEQ LEQ EQ NEQ NOT EXTERN
+%token <str> IDENTIFICATEUR CONSTANTE VOID INT FOR WHILE IF ELSE SWITCH CASE DEFAULT
+%token <str> BREAK RETURN PLUS MOINS MUL DIV LSHIFT RSHIFT BAND BOR LAND LOR LT GT 
+%token <str> GEQ LEQ EQ NEQ NOT EXTERN
 %left PLUS MOINS
 %left MUL DIV
 %left LSHIFT RSHIFT
@@ -21,137 +21,144 @@
 %left REL
 %start programme
 
+%union{
+	char *str;
+	Node *node;
+}
+%type <str> binary_op binary_rel binary_comp type
+%type <node> liste_declarations liste_fonctions declaration fonction liste_declarateurs declarateur liste_parms liste_instructions liste_parms_content parm instruction iteration selection saut affectation bloc appel condition expression variable variableTab liste_expressions liste_expressions_content
+
 
 %%
 programme	:	
-		liste_declarations liste_fonctions																{/*root = createNode("root", $2, NULL);*/}
+		liste_declarations liste_fonctions																{root = createNode("root", $2, $1);}
 ;
 liste_declarations	:	
-		liste_declarations declaration 																	{}
-	|																									{}
+		liste_declarations declaration 																	{$$ = NULL; /* === TODO! === */}
+	|																									{$$ = NULL; /* === TODO! === */}
 ;
 liste_fonctions	:	
-		liste_fonctions fonction 																		{/*$$ = setBrother($2, $1);*/}
-|               fonction 																				{/*$$ = $1;*/}
+		liste_fonctions fonction 																		{$$ = setBrother($2, $1);}
+|               fonction 																				{$$ = $1;}
 ;
 declaration	:	
-		type liste_declarateurs ';' 																	{}
+		type liste_declarateurs ';' 																	{$$ = NULL; /* === TODO! === */}
 ;
 liste_declarateurs	:	
-		liste_declarateurs ',' declarateur 																{}
-	|	declarateur 																					{}
+		liste_declarateurs ',' declarateur 																{$$ = NULL; /* === TODO! === */}
+	|	declarateur 																					{$$ = NULL; /* === TODO! === */}
 ;
 declarateur	:	
-		IDENTIFICATEUR 																					{}
-	|	declarateur '[' CONSTANTE ']' 																	{}
+		IDENTIFICATEUR 																					{$$ = NULL; /* === TODO! === */}
+	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL; /* === TODO! === */}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{/*$$ = createNode(buildStr($2, buildStr(", ", $1)), $8, NULL);*/}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{/*$$ = createNode("", NULL, NULL);*/}
+		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createNode(buildStr($2, buildStr(", ", $1)), $8, NULL);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createNode("", NULL, NULL);}
 ;
 type	:	
-		VOID 																							{/*$$ = "void";*/}
-	|	INT 																							{/*$$ = "int";*/}
+		VOID 																							{$$ = "void";}
+	|	INT 																							{$$ = "int";}
 ;
 liste_parms	:	
-		liste_parms_content 																			{}
-	|																									{}
+		liste_parms_content 																			{$$ = NULL; /* === TODO! === */}
+	|																									{$$ = NULL; /* === TODO! === */}
 ;
 liste_parms_content	:
-		liste_parms_content ',' parm 																	{}
-	|	parm 																							{}
+		liste_parms_content ',' parm 																	{$$ = NULL; /* === TODO! === */}
+	|	parm 																							{$$ = NULL; /* === TODO! === */}
 ;
 parm	:	
-		INT IDENTIFICATEUR 																				{}
+		INT IDENTIFICATEUR 																				{$$ = NULL; /* === TODO! === */}
 ;
 liste_instructions :	
-		liste_instructions instruction 																	{/*$$ = setBrother($2, $1);*/}
-	| 																									{/*$$ = NULL;*/}
+		liste_instructions instruction 																	{$$ = setBrother($2, $1);}
+	| 																									{$$ = NULL;}
 ;
 instruction	:	
-		iteration 																						{/*$$ = $1;*/}
-	|	selection 																						{/*$$ = $1;*/}
-	|	saut 																							{/*$$ = $1;*/}
-	|	affectation ';' 																				{/*$$ = $1;*/}
-	|	bloc 																							{/*$$ = $1;*/}
-	|	appel 																							{/*$$ = $1;*/}
+		iteration 																						{$$ = $1;}
+	|	selection 																						{$$ = $1;}
+	|	saut 																							{$$ = $1;}
+	|	affectation ';' 																				{$$ = $1;}
+	|	bloc 																							{$$ = $1;}
+	|	appel 																							{$$ = $1;}
 ;
 iteration	:	
-		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{/*$$ = createBinNode("FOR", $3, setBrother($5, setBrother($7, $9)));*/}
-	|	WHILE '(' condition ')' instruction 															{/*$$ = createBinNode("WHILE", $3, $5);*/}
+		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{$$ = createBinNode("FOR", $3, setBrother($5, setBrother($7, $9)));}
+	|	WHILE '(' condition ')' instruction 															{$$ = createBinNode("WHILE", $3, $5);}
 ;
 selection	:	
-		IF '(' condition ')' instruction %prec THEN 													{/*$$ = createBinNode("IF", $3, $5);*/}
-	|	IF '(' condition ')' instruction ELSE instruction 												{/*$$ = createBinNode("IF", $3, setBrother($5, $7));*/}
-	|	SWITCH '(' expression ')' instruction 															{/*$$ = createBinNode("SWITCH", $3, $5);*/}
-	|	CASE CONSTANTE ':' instruction 																	{/*$$ = $4;*/}
-	|	DEFAULT ':' instruction 																		{/*$$ = $3;*/}
+		IF '(' condition ')' instruction %prec THEN 													{$$ = createBinNode("IF", $3, $5);}
+	|	IF '(' condition ')' instruction ELSE instruction 												{$$ = createBinNode("IF", $3, setBrother($5, $7));}
+	|	SWITCH '(' expression ')' instruction 															{$$ = createBinNode("SWITCH", $3, $5);}
+	|	CASE CONSTANTE ':' instruction 																	{$$ = $4;}
+	|	DEFAULT ':' instruction 																		{$$ = $3;}
 ;
 saut	:	
-		BREAK ';' 																						{/*$$ = createLeaf("BREAK");*/}
-	|	RETURN ';' 																						{/*$$ = createLeaf("RETURN");*/}
-	|	RETURN expression ';' 																			{/*$$ = createNode("RETURN", $2, NULL);*/}
+		BREAK ';' 																						{$$ = createLeaf("BREAK");}
+	|	RETURN ';' 																						{$$ = createLeaf("RETURN");}
+	|	RETURN expression ';' 																			{$$ = createNode("RETURN", $2, NULL);}
 ;
 affectation	:	
-		variable '=' expression 																		{/*$$ = createBinNode(":=", $1, $3);*/}
+		variable '=' expression 																		{$$ = createBinNode(":=", $1, $3);}
 ;
 bloc	:	
-		'{' liste_declarations liste_instructions '}' 													{/*$$ = createNode("BLOC", $3, NULL);*/}
+		'{' liste_declarations liste_instructions '}' 													{$$ = createNode("BLOC", $3, NULL);}
 ;
 appel	:	
-		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{}
+		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{$$ = createNode($1, $3, NULL);}
 ;
 variable	:	
-		IDENTIFICATEUR 																					{/*$$ = createLeaf($1);*/}
-	|	variableTab '[' expression ']' 																	{/*$$ = addNewSon($1, $3);*/}
+		IDENTIFICATEUR 																					{$$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{$$ = addNewSon($1, $3);}
 ;
 variableTab	:	
-		IDENTIFICATEUR 																					{/*$$ = createNode("TAB", $1, NULL);*/}
-	|	variableTab '[' expression ']' 																	{/*$$ = addNewSon($1, $3);*/}
+		IDENTIFICATEUR 																					{$$ = createNode("TAB", createLeaf($1), NULL);}
+	|	variableTab '[' expression ']' 																	{$$ = addNewSon($1, $3);}
 ;
 expression	:	
-		'(' expression ')' 																				{/*$$ = $2;*/}
-	|	expression binary_op expression %prec OP 														{/*$$ = createBinNode($2, $1, $3);*/}
-	|	MOINS expression 																				{/*$$ = createNode("-", $2, NULL);*/}
-	|	CONSTANTE 																						{/*$$ = createLeaf($1);*/}
-	|	variable 																						{/*$$ = $1;*/}
-	|	IDENTIFICATEUR '(' liste_expressions ')' 														{}
+		'(' expression ')' 																				{$$ = $2;}
+	|	expression binary_op expression %prec OP 														{$$ = createBinNode($2, $1, $3);}
+	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
+	|	CONSTANTE 																						{$$ = createLeaf($1);}
+	|	variable 																						{$$ = $1;}
+	|	IDENTIFICATEUR '(' liste_expressions ')' 														{$$ = createNode($1, $3, NULL);}
 ;
 liste_expressions	:	
-		liste_expressions_content 																		{}
-	| 																									{}
+		liste_expressions_content 																		{$$ = $1;}
+	| 																									{$$ = NULL;}
 ;
 liste_expressions_content	:
-		liste_expressions_content ',' expression 														{}
-	|	expression 																						{}
+		liste_expressions_content ',' expression 														{$$ = setBrother($3, $1);}
+	|	expression 																						{$$ = $1;}
 ;
 condition	:	
-		NOT '(' condition ')' 																			{/*$$ = createNode("!", $3, NULL);*/}
-	|	condition binary_rel condition %prec REL 														{/*$$ = createBinNode($2, $1, $2);*/}
-	|	'(' condition ')' 																				{/*$$ = $2;*/}
-	|	expression binary_comp expression 																{/*$$ = createBinNode($2, $1, $2);*/}
+		NOT '(' condition ')' 																			{$$ = createNode("!", $3, NULL);}
+	|	condition binary_rel condition %prec REL 														{$$ = createBinNode($2, $1, $3);}
+	|	'(' condition ')' 																				{$$ = $2;}
+	|	expression binary_comp expression 																{$$ = createBinNode($2, $1, $3);}
 ;
 binary_op	:	
-		PLUS 																							{/*$$ = "+";*/}
-	|       MOINS 																						{/*$$ = "-";*/}
-	|	MUL 																							{/*$$ = "*";*/}
-	|	DIV 																							{/*$$ = "/";*/}
-	|       LSHIFT 																						{/*$$ = "<<";*/}
-	|       RSHIFT 																						{/*$$ = ">>";*/}
-	|	BAND 																							{/*$$ = "&";*/}
-	|	BOR 																							{/*$$ = "|";*/}
+		PLUS 																							{$$ = "+";}
+	|       MOINS 																						{$$ = "-";}
+	|	MUL 																							{$$ = "*";}
+	|	DIV 																							{$$ = "/";}
+	|       LSHIFT 																						{$$ = "<<";}
+	|       RSHIFT 																						{$$ = ">>";}
+	|	BAND 																							{$$ = "&";}
+	|	BOR 																							{$$ = "|";}
 ;
 binary_rel	:	
-		LAND 																							{/*$$ = "&&";*/}
-	|	LOR 																							{/*$$ = "||";*/}
+		LAND 																							{$$ = "&&";}
+	|	LOR 																							{$$ = "||";}
 ;
 binary_comp	:	
-		LT 																								{/*$$ = "<";*/}
-	|	GT 																								{/*$$ = ">";*/}
-	|	GEQ 																							{/*$$ = ">=";*/}
-	|	LEQ 																							{/*$$ = "<=";*/}
-	|	EQ 																								{/*$$ = "==";*/}
-	|	NEQ 																							{/*$$ = "!=";*/}
+		LT 																								{$$ = "<";}
+	|	GT 																								{$$ = ">";}
+	|	GEQ 																							{$$ = ">=";}
+	|	LEQ 																							{$$ = "<=";}
+	|	EQ 																								{$$ = "==";}
+	|	NEQ 																							{$$ = "!=";}
 ;
 %%
 
@@ -165,13 +172,4 @@ int yyerror(char *s) {
 
 int main() {
 	yyparse();
-
-
-
-	/* MAIN autrefois dans le.l :
-	 * while(1) yylex();
-	 * printf("END OF FILE!\n");
-	 */
-
-	/* Rappel : CTRL - D pour quitter quand on écrit */
 }
