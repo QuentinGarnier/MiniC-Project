@@ -55,8 +55,8 @@ declarateur	:
 	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL; /* === TODO! === */}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createNode(buildStr($2, buildStr(", ", $1)), createNode("BLOC", $8, NULL), NULL);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createLeaf("TODO?");}
+		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createTypedNode(buildStr($2, buildStr(", ", $1)), createNode("BLOC", $8, NULL), NULL, FUN_T);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createTypedLeaf("TODO?", FUN_T);}
 ;
 type	:	
 		VOID 																							{$$ = "void";}
@@ -90,16 +90,16 @@ iteration	:
 	|	WHILE '(' condition ')' instruction 															{$$ = createBinNode("WHILE", $5, $3);}
 ;
 selection	:	
-		IF '(' condition ')' instruction %prec THEN 													{$$ = createBinNode("IF", $5, $3);}
-	|	IF '(' condition ')' instruction ELSE instruction 												{$$ = createBinNode("IF", $7, setBrother($5, $3));}
+		IF '(' condition ')' instruction %prec THEN 													{$$ = createTypedBinNode("IF", $5, $3, IF_T);}
+	|	IF '(' condition ')' instruction ELSE instruction 												{$$ = createTypedBinNode("IF", $7, setBrother($5, $3), IF_T);}
 	|	SWITCH '(' expression ')' instruction 															{$$ = specialSwitchNode($3, $5);}
 	|	CASE CONSTANTE ':' instruction 																	{char s[10]; sprintf(s, "%d", $2); $$ = createBinNode("CASE", createLeaf(s), $4);}
 	|	DEFAULT ':' instruction 																		{$$ = createNode("DEFAULT", $3, NULL);}
 ;
 saut	:	
-		BREAK ';' 																						{$$ = createLeaf("BREAK");}
-	|	RETURN ';' 																						{$$ = createLeaf("RETURN");}
-	|	RETURN expression ';' 																			{$$ = createNode("RETURN", $2, NULL);}
+		BREAK ';' 																						{$$ = createTypedLeaf("BREAK", BREAK_T);}
+	|	RETURN ';' 																						{$$ = createTypedLeaf("RETURN", RETURN_T);}
+	|	RETURN expression ';' 																			{$$ = createTypedNode("RETURN", $2, NULL, RETURN_T);}
 ;
 affectation	:	
 		variable '=' expression 																		{$$ = createBinNode(":=", $3, $1);}
@@ -108,7 +108,7 @@ bloc	:
 		'{' liste_declarations liste_instructions '}' 													{$$ = createNode("BLOC", $3, NULL);}
 ;
 appel	:	
-		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{$$ = createNode($1, $3, NULL);}
+		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{$$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 variable	:	
 		IDENTIFICATEUR 																					{$$ = createLeaf($1);}

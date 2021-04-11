@@ -4,7 +4,7 @@
 
 typedef enum
 {
-    CLASSIC_T, RETURN_T, IF_T, FUN_T, CALL_FUN_T, BREAK_T
+	BREAK_T, CLASSIC_T, RETURN_T, IF_T, FUN_T, CALL_FUN_T
 } NodeType;
 
 typedef struct Node
@@ -17,11 +17,15 @@ typedef struct Node
 
 Node *createNode(char *v, Node *s, Node *b);
 
-Node *createNodeTyped(char *v, Node *s, Node *b, NodeType nt);
+Node *createTypedNode(char *v, Node *s, Node *b, NodeType nt);
 
 Node *createBinNode(char *v, Node *s, Node *b);
 
+Node *createTypedBinNode(char *v, Node *s, Node *b, NodeType nt);
+
 Node *createLeaf(char *v);
+
+Node *createTypedLeaf(char *v, NodeType nt);
 
 Node *setBrother(Node *n, Node *b);
 

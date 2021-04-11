@@ -65,17 +65,7 @@ IS                      (u|U|l|L)*
 
 %%
 
-Node *createNode(char *v, Node *s, Node *b)
-{
-    Node *n = malloc(sizeof(Node));
-    n->value = strdup(v);
-    n->nodeSon = s;
-    n->nodeBrother = b;
-    n->nodeType = CLASSIC_T;
-    return n;
-}
-
-Node *createNodeTyped(char *v, Node *s, Node *b, NodeType nt)
+Node *createTypedNode(char *v, Node *s, Node *b, NodeType nt)
 {
     Node *n = malloc(sizeof(Node));
     n->value = strdup(v);
@@ -85,19 +75,35 @@ Node *createNodeTyped(char *v, Node *s, Node *b, NodeType nt)
     return n;
 }
 
-Node *createBinNode(char *v, Node *s, Node *b)
+Node *createNode(char *v, Node *s, Node *b)
+{
+    return createTypedNode(v, s, b, CLASSIC_T);
+}
+
+Node *createTypedBinNode(char *v, Node *s, Node *b, NodeType nt)
 {
     Node *n = malloc(sizeof(Node));
     n->value = strdup(v);
     n->nodeSon = s;
     n->nodeBrother = NULL;
     n->nodeSon->nodeBrother = b;
+    n->nodeType = nt;
     return n;
+}
+
+Node *createBinNode(char *v, Node *s, Node *b)
+{
+    return createTypedBinNode(v, s, b, CLASSIC_T);
 }
 
 Node *createLeaf(char *v)
 {
     return createNode(v, NULL, NULL);
+}
+
+Node *createTypedLeaf(char *v, NodeType nt)
+{
+    return createTypedNode(v, NULL, NULL, nt);
 }
 
 Node *setBrother(Node *n, Node *b)
@@ -122,7 +128,7 @@ void buildCasesNodes(Node *n, Node *chaine)
         else if(strcmp(n->value, "CASE") == 0) n->nodeSon = n->nodeSon->nodeBrother;
         if(n->nodeBrother != NULL) buildCasesNodes(n->nodeBrother, NULL);
     } else if(n->nodeBrother != NULL) {
-        if(chaine == NULL) buildCasesNodes(n->nodeBrother, createNode(n->value, n->nodeSon, NULL));
+        if(chaine == NULL) buildCasesNodes(n->nodeBrother, createTypedNode(n->value, n->nodeSon, NULL, n->nodeType));
         else {
             setLastBrother(chaine, createNode(n->value, n->nodeSon, NULL));
             buildCasesNodes(n->nodeBrother, chaine);
@@ -168,7 +174,18 @@ void nodeToDot(FILE* file, Node *n, int *id, int fatherID)
     if(n->nodeBrother != NULL) {
         nodeToDot(file, n->nodeBrother, id, fatherID);
     }
-    if(fatherID >= 0) fprintf(file, "\tn_%d [label=\"%s\" shape=ellipse color=black];\n", tmp, n->value);
+    if(fatherID >= 0) {
+        fprintf(file, "\tn_%d [label=\"%s\" shape=", tmp, n->value);
+        switch(n->nodeType) {
+            case BREAK_T: fprintf(file, "box color=black"); break;
+            case RETURN_T: fprintf(file, "trapezium color=blue"); break;
+            case IF_T: fprintf(file, "diamond color=black"); break;
+            case FUN_T: fprintf(file, "invtrapezium color=blue"); break;
+            case CALL_FUN_T: fprintf(file, "septagon color=black"); break;
+            default: fprintf(file, "ellipse color=black"); break;
+        }
+        fprintf(file, "];\n");
+    }
     if(fatherID > 0) fprintf(file, "\tn_%d -> n_%d;\n", fatherID, tmp);
     if(n->nodeSon != NULL) {
         nodeToDot(file, n->nodeSon, id, tmp);
