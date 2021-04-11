@@ -106,10 +106,51 @@ Node *setBrother(Node *n, Node *b)
     return n;
 }
 
-Node *addNewSon(Node *n, Node *s)
+void *setLastBrother(Node *n, Node *b)
 {
-    n->nodeSon->nodeBrother = s;
-    return n;
+    if(n->nodeBrother == NULL) n->nodeBrother = b;
+    else setLastBrother(n->nodeBrother, b);
+}
+
+void buildCasesNodes(Node *n, Node *chaine)
+{
+    if(strcmp(n->value, "CASE") == 0 || strcmp(n->value, "DEFAULT") == 0) {
+        if(chaine != NULL) {
+            setLastBrother(chaine, n->nodeSon->nodeBrother);
+            n->nodeSon = chaine;
+        }
+        else if(strcmp(n->value, "CASE") == 0) n->nodeSon = n->nodeSon->nodeBrother;
+        if(n->nodeBrother != NULL) buildCasesNodes(n->nodeBrother, NULL);
+    } else if(n->nodeBrother != NULL) {
+        if(chaine == NULL) buildCasesNodes(n->nodeBrother, createNode(n->value, n->nodeSon, NULL));
+        else {
+            setLastBrother(chaine, createNode(n->value, n->nodeSon, NULL));
+            buildCasesNodes(n->nodeBrother, chaine);
+        }
+    }
+
+}
+
+void epureSwitchTree(Node *switchSon)
+{
+    if(switchSon->nodeBrother != NULL) {
+        if(strcmp(switchSon->nodeBrother->value, "CASE") == 0 || strcmp(switchSon->nodeBrother->value, "DEFAULT") == 0) epureSwitchTree(switchSon->nodeBrother);
+        else {
+            switchSon->nodeBrother = switchSon->nodeBrother->nodeBrother;
+            if(switchSon->nodeBrother != NULL) epureSwitchTree(switchSon->nodeBrother);
+        }
+    }
+}
+
+Node *specialSwitchNode(Node *expr, Node *bloc)
+{
+    if(expr == NULL || bloc == NULL) return NULL;
+    if(strcmp(bloc->value, "BLOC") == 0) {
+        buildCasesNodes(bloc->nodeSon, NULL);
+        epureSwitchTree(bloc->nodeSon);
+        setLastBrother(bloc->nodeSon, expr);
+        return createNode("SWITCH", bloc->nodeSon, NULL);
+    }
 }
 
 char *buildStr(char *str1, char *str2)
@@ -123,12 +164,12 @@ char *buildStr(char *str1, char *str2)
 void nodeToDot(FILE* file, Node *n, int *id, int fatherID)
 {
     int tmp = *id;
-    if(fatherID >= 0) fprintf(file, "\tn_%d [label=\"%s\" shape=ellipse color=black];\n", *id, n->value);
-    if(fatherID > 0) fprintf(file, "\tn_%d -> n_%d;\n", fatherID, *id);
     *id = *id + 1;
     if(n->nodeBrother != NULL) {
         nodeToDot(file, n->nodeBrother, id, fatherID);
     }
+    if(fatherID >= 0) fprintf(file, "\tn_%d [label=\"%s\" shape=ellipse color=black];\n", tmp, n->value);
+    if(fatherID > 0) fprintf(file, "\tn_%d -> n_%d;\n", fatherID, tmp);
     if(n->nodeSon != NULL) {
         nodeToDot(file, n->nodeSon, id, tmp);
     }

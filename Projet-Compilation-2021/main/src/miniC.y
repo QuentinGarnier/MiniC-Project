@@ -55,8 +55,8 @@ declarateur	:
 	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL; /* === TODO! === */}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createNode(buildStr($2, buildStr(", ", $1)), $8, NULL);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createNode("", NULL, NULL);}
+		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createNode(buildStr($2, buildStr(", ", $1)), createNode("BLOC", $8, NULL), NULL);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createLeaf("TODO?");}
 ;
 type	:	
 		VOID 																							{$$ = "void";}
@@ -86,15 +86,15 @@ instruction	:
 	|	appel 																							{$$ = $1;}
 ;
 iteration	:	
-		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{$$ = createBinNode("FOR", $3, setBrother($5, setBrother($7, $9)));}
-	|	WHILE '(' condition ')' instruction 															{$$ = createBinNode("WHILE", $3, $5);}
+		FOR '(' affectation ';' condition ';' affectation ')' instruction 								{$$ = createBinNode("FOR", $9, setBrother($7, setBrother($5, $3)));}
+	|	WHILE '(' condition ')' instruction 															{$$ = createBinNode("WHILE", $5, $3);}
 ;
 selection	:	
-		IF '(' condition ')' instruction %prec THEN 													{$$ = createBinNode("IF", $3, $5);}
-	|	IF '(' condition ')' instruction ELSE instruction 												{$$ = createBinNode("IF", $3, setBrother($5, $7));}
-	|	SWITCH '(' expression ')' instruction 															{$$ = createBinNode("SWITCH", $3, $5);}
-	|	CASE CONSTANTE ':' instruction 																	{$$ = $4;}
-	|	DEFAULT ':' instruction 																		{$$ = $3;}
+		IF '(' condition ')' instruction %prec THEN 													{$$ = createBinNode("IF", $5, $3);}
+	|	IF '(' condition ')' instruction ELSE instruction 												{$$ = createBinNode("IF", $7, setBrother($5, $3));}
+	|	SWITCH '(' expression ')' instruction 															{$$ = specialSwitchNode($3, $5);}
+	|	CASE CONSTANTE ':' instruction 																	{char s[10]; sprintf(s, "%d", $2); $$ = createBinNode("CASE", createLeaf(s), $4);}
+	|	DEFAULT ':' instruction 																		{$$ = createNode("DEFAULT", $3, NULL);}
 ;
 saut	:	
 		BREAK ';' 																						{$$ = createLeaf("BREAK");}
@@ -102,7 +102,7 @@ saut	:
 	|	RETURN expression ';' 																			{$$ = createNode("RETURN", $2, NULL);}
 ;
 affectation	:	
-		variable '=' expression 																		{$$ = createBinNode(":=", $1, $3);}
+		variable '=' expression 																		{$$ = createBinNode(":=", $3, $1);}
 ;
 bloc	:	
 		'{' liste_declarations liste_instructions '}' 													{$$ = createNode("BLOC", $3, NULL);}
@@ -112,15 +112,15 @@ appel	:
 ;
 variable	:	
 		IDENTIFICATEUR 																					{$$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{$$ = addNewSon($1, $3);}
+	|	variableTab '[' expression ']' 																	{$$ = createNode("TAB", setBrother($3, $1), NULL);}
 ;
 variableTab	:	
-		IDENTIFICATEUR 																					{$$ = createNode("TAB", createLeaf($1), NULL);}
-	|	variableTab '[' expression ']' 																	{$$ = addNewSon($1, $3);}
+		IDENTIFICATEUR 																					{$$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{$$ = setBrother($3,  $1);}
 ;
 expression	:	
 		'(' expression ')' 																				{$$ = $2;}
-	|	expression binary_op expression %prec OP 														{$$ = createBinNode($2, $1, $3);}
+	|	expression binary_op expression %prec OP 														{$$ = createBinNode($2, $3, $1);}
 	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
 	|	CONSTANTE 																						{char s[10]; sprintf(s, "%d", $1); $$ = createLeaf(s);}
 	|	variable 																						{$$ = $1;}
@@ -136,9 +136,9 @@ liste_expressions_content	:
 ;
 condition	:	
 		NOT '(' condition ')' 																			{$$ = createNode("!", $3, NULL);}
-	|	condition binary_rel condition %prec REL 														{$$ = createBinNode($2, $1, $3);}
+	|	condition binary_rel condition %prec REL 														{$$ = createBinNode($2, $3, $1);}
 	|	'(' condition ')' 																				{$$ = $2;}
-	|	expression binary_comp expression 																{$$ = createBinNode($2, $1, $3);}
+	|	expression binary_comp expression 																{$$ = createBinNode($2, $3, $1);}
 ;
 binary_op	:	
 		PLUS 																							{$$ = "+";}

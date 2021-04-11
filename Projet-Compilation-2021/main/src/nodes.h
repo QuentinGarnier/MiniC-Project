@@ -25,7 +25,9 @@ Node *createLeaf(char *v);
 
 Node *setBrother(Node *n, Node *b);
 
-Node *addNewSon(Node *n, Node *s);
+void *setLastBrother(Node *n, Node *b);
+
+Node *specialSwitchNode(Node *expr, Node *bloc);
 
 char *buildStr(char *str1, char *str2);
 
