@@ -2,8 +2,14 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include "nodes.h"
+	#include "midentifier.h"
 
 	Node *root;
+	MFun *funStack = NULL;
+	MVar *globalStack = NULL;
+	MVar *localStack = NULL;
+	int nesting = 0; //Nesting level (0 is global)
+	int count = 0; //Count for functions' parameters
 %}
 
 
@@ -33,45 +39,45 @@
 
 %%
 programme	:	
-		liste_declarations liste_fonctions																{root = createBinNode("root", $2, $1);}
+		liste_declarations liste_fonctions																{root = createBinNode("root", $2, NULL); freeMVar(localStack); freeMVar(globalStack); freeMFun(funStack);}
 ;
 liste_declarations	:	
-		liste_declarations declaration 																	{$$ = NULL; /* === TODO! === */}
-	|																									{$$ = NULL; /* === TODO! === */}
+		liste_declarations declaration 																	{$$ = NULL;}
+	|																									{$$ = NULL;}
 ;
 liste_fonctions	:	
 		liste_fonctions fonction 																		{$$ = setBrother($2, $1);}
 |               fonction 																				{$$ = $1;}
 ;
 declaration	:	
-		type liste_declarateurs ';' 																	{$$ = NULL; /* === TODO! === */}
+		type liste_declarateurs ';' 																	{$$ = NULL;}
 ;
 liste_declarateurs	:	
-		liste_declarateurs ',' declarateur 																{$$ = NULL; /* === TODO! === */}
-	|	declarateur 																					{$$ = NULL; /* === TODO! === */}
+		liste_declarateurs ',' declarateur 																{$$ = NULL;}
+	|	declarateur 																					{$$ = NULL;}
 ;
 declarateur	:	
-		IDENTIFICATEUR 																					{$$ = NULL; /* === TODO! === */}
-	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL; /* === TODO! === */}
+		IDENTIFICATEUR 																					{addVar(globalStack, $1); $$ = NULL;}
+	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL;}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createTypedNode(buildStr($2, buildStr(", ", $1)), createNode("BLOC", $8, NULL), NULL, FUN_T);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
+		type IDENTIFICATEUR '(' liste_parms ')' bloc 													{addFun(funStack, $2, count); count = 0; $$ = createTypedNode(buildStr($2, buildStr(", ", $1)), $6, NULL, FUN_T);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{addFun(funStack, $3, count); count = 0; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
 ;
 type	:	
 		VOID 																							{$$ = "void";}
 	|	INT 																							{$$ = "int";}
 ;
 liste_parms	:	
-		liste_parms_content 																			{$$ = NULL; /* === TODO! === */}
-	|																									{$$ = NULL; /* === TODO! === */}
+		liste_parms_content 																			{$$ = NULL;}
+	|																									{$$ = NULL;}
 ;
 liste_parms_content	:
-		liste_parms_content ',' parm 																	{$$ = NULL; /* === TODO! === */}
-	|	parm 																							{$$ = NULL; /* === TODO! === */}
+		liste_parms_content ',' parm 																	{$$ = NULL;}
+	|	parm 																							{$$ = NULL;}
 ;
 parm	:	
-		INT IDENTIFICATEUR 																				{$$ = NULL; /* === TODO! === */}
+		INT IDENTIFICATEUR 																				{addVar(localStack, $2); count++; $$ = NULL;}
 ;
 liste_instructions :	
 		liste_instructions instruction 																	{$$ = setBrother($2, $1);}
@@ -105,7 +111,7 @@ affectation	:
 		variable '=' expression 																		{$$ = createBinNode(":=", $3, $1);}
 ;
 bloc	:	
-		'{' liste_declarations liste_instructions '}' 													{$$ = createNode("BLOC", $3, NULL);}
+		'{' liste_declarations liste_instructions '}' 													{freeMVar(localStack); nesting--; $$ = createNode("BLOC", $3, NULL);}
 ;
 appel	:	
 		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{$$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}

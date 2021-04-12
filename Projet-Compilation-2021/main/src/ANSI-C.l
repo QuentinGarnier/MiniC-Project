@@ -11,6 +11,7 @@ IS                      (u|U|l|L)*
 %{
 #include <stdio.h>
 #include "nodes.h"
+#include "midentifier.h"
 #include "y.tab.h"
 %}
 
@@ -203,5 +204,87 @@ void buildTree(Node *root)
         nodeToDot(file, root, &id, -1);
         fprintf(file, "}");
         fclose(file);
+    }
+}
+
+
+
+
+MFun *createMFun(char *n, int nba)
+{
+    MFun *f = malloc(sizeof(MFun));
+    f->name = strdup(n);
+    f->args = nba;
+    f->nextFun = NULL;
+    return f;
+}
+
+void addLastFun(MFun *stack, MFun *fun)
+{
+    if(stack->nextFun != NULL) addLastFun(stack->nextFun, fun);
+    else stack->nextFun = fun;
+}
+
+void addFun(MFun *fun, char *n, int nba)
+{
+    if(fun != NULL) addLastFun(fun, createMFun(n, nba));
+    else fun = createMFun(n, nba);
+}
+
+int searchFun(MFun *fun, char *n, int nba)
+{
+    if(fun->nextFun == NULL) return -1;
+    if(strcmp(fun->name, n) == 0 && fun->args == nba) return 0;
+    else searchFun(fun->nextFun, n, nba);
+}
+
+void freeMFun(MFun *fst)
+{
+    MFun *tmp;
+    while(fst != NULL)
+    {
+        tmp = fst;
+        fst = fst->nextFun;
+        free(tmp);
+    }
+}
+
+
+
+MVar *createMVar(char *n)
+{
+    MVar *v = malloc(sizeof(MVar));
+    v->name = strdup(n);
+    v->nextVar = NULL;
+    return v;
+}
+
+void addLastVar(MVar *stack, MVar *var)
+{
+    if(stack->nextVar != NULL) addLastVar(stack->nextVar, var);
+    else stack->nextVar = var;
+}
+
+void addVar(MVar *var, char *n)
+{
+    if(var != NULL) addLastVar(var, createMVar(n));
+    else var = createMVar(n);
+}
+
+int searchVar(MVar *var, char *n)
+{
+    if(var->nextVar == NULL) return -1;
+    if(strcmp(var->name, n) == 0) return 0;
+    else searchVar(var->nextVar, n);
+}
+
+void freeMVar(MVar *fst)
+{
+    MVar *tmp;
+    while(fst != NULL)
+    {
+        tmp = fst;
+        fst = fst->nextVar;
+        free(tmp);
     }
 }
