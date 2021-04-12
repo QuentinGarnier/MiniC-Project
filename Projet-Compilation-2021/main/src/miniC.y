@@ -56,7 +56,7 @@ declarateur	:
 ;
 fonction	:	
 		type IDENTIFICATEUR '(' liste_parms ')' '{' liste_declarations liste_instructions '}' 			{$$ = createTypedNode(buildStr($2, buildStr(", ", $1)), createNode("BLOC", $8, NULL), NULL, FUN_T);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createTypedLeaf("TODO?", FUN_T);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{$$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
 ;
 type	:	
 		VOID 																							{$$ = "void";}
@@ -124,7 +124,7 @@ expression	:
 	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
 	|	CONSTANTE 																						{char s[10]; sprintf(s, "%d", $1); $$ = createLeaf(s);}
 	|	variable 																						{$$ = $1;}
-	|	IDENTIFICATEUR '(' liste_expressions ')' 														{$$ = createNode($1, $3, NULL);}
+	|	IDENTIFICATEUR '(' liste_expressions ')' 														{$$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 liste_expressions	:	
 		liste_expressions_content 																		{$$ = $1;}

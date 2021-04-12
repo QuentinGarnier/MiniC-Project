@@ -86,7 +86,7 @@ Node *createTypedBinNode(char *v, Node *s, Node *b, NodeType nt)
     n->value = strdup(v);
     n->nodeSon = s;
     n->nodeBrother = NULL;
-    n->nodeSon->nodeBrother = b;
+    setLastBrother(n->nodeSon, b);
     n->nodeType = nt;
     return n;
 }
