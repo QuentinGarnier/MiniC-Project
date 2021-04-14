@@ -4,12 +4,17 @@
 	#include "nodes.h"
 	#include "midentifier.h"
 
+	extern int yylineno;
+
 	Node *root;
-	MFun *funStack = NULL;
-	MVar *globalStack = NULL;
-	MVar *localStack = NULL;
-	int nesting = 0; //Nesting level (0 is global)
-	int count = 0; //Count for functions' parameters
+
+	FunStack *funStack;
+
+	/*NestingStack *varStacks;*/
+
+	int nesting = 0; //Count for nesting level
+	int count = 0;   //Count for functions' parameters
+	int count2 = 0;  //Count to verify the functions' numer of parameters
 %}
 
 
@@ -39,7 +44,7 @@
 
 %%
 programme	:	
-		liste_declarations liste_fonctions																{root = createBinNode("root", $2, NULL); freeMVar(localStack); freeMVar(globalStack); freeMFun(funStack);}
+		liste_declarations liste_fonctions																{root = createBinNode("root", $2, NULL); freeFunStack(funStack);}
 ;
 liste_declarations	:	
 		liste_declarations declaration 																	{$$ = NULL;}
@@ -57,12 +62,12 @@ liste_declarateurs	:
 	|	declarateur 																					{$$ = NULL;}
 ;
 declarateur	:	
-		IDENTIFICATEUR 																					{addVar(globalStack, $1); $$ = NULL;}
+		IDENTIFICATEUR 																					{$$ = NULL;}
 	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL;}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' bloc 													{addFun(funStack, $2, count); count = 0; $$ = createTypedNode(buildStr($2, buildStr(", ", $1)), $6, NULL, FUN_T);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{addFun(funStack, $3, count); count = 0; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
+		type IDENTIFICATEUR '(' liste_parms ')' bloc 													{funStack = addFun(funStack, $2, count); count = 0; $$ = createTypedNode(buildStr($2, buildStr(", ", $1)), $6, NULL, FUN_T);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{funStack = addFun(funStack, $3, count); count = 0; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
 ;
 type	:	
 		VOID 																							{$$ = "void";}
@@ -77,7 +82,7 @@ liste_parms_content	:
 	|	parm 																							{$$ = NULL;}
 ;
 parm	:	
-		INT IDENTIFICATEUR 																				{addVar(localStack, $2); count++; $$ = NULL;}
+		INT IDENTIFICATEUR 																				{count++; $$ = NULL;}
 ;
 liste_instructions :	
 		liste_instructions instruction 																	{$$ = setBrother($2, $1);}
@@ -111,10 +116,10 @@ affectation	:
 		variable '=' expression 																		{$$ = createBinNode(":=", $3, $1);}
 ;
 bloc	:	
-		'{' liste_declarations liste_instructions '}' 													{freeMVar(localStack); nesting--; $$ = createNode("BLOC", $3, NULL);}
+		'{' liste_declarations liste_instructions '}' 													{nesting--; $$ = createNode("BLOC", $3, NULL);}
 ;
 appel	:	
-		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{$$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
+		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{if(searchFun(funStack, $1, count2) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 variable	:	
 		IDENTIFICATEUR 																					{$$ = createLeaf($1);}
@@ -130,15 +135,15 @@ expression	:
 	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
 	|	CONSTANTE 																						{char s[10]; sprintf(s, "%d", $1); $$ = createLeaf(s);}
 	|	variable 																						{$$ = $1;}
-	|	IDENTIFICATEUR '(' liste_expressions ')' 														{$$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
+	|	IDENTIFICATEUR '(' liste_expressions ')' 														{if(searchFun(funStack, $1, count2) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 liste_expressions	:	
 		liste_expressions_content 																		{$$ = $1;}
 	| 																									{$$ = NULL;}
 ;
 liste_expressions_content	:
-		liste_expressions_content ',' expression 														{$$ = setBrother($3, $1);}
-	|	expression 																						{$$ = $1;}
+		liste_expressions_content ',' expression 														{count2++; $$ = setBrother($3, $1);}
+	|	expression 																						{count2++; $$ = $1;}
 ;
 condition	:	
 		NOT '(' condition ')' 																			{$$ = createNode("!", $3, NULL);}
@@ -173,8 +178,8 @@ binary_comp	:
 
 
 int yyerror(char *s) {
-	fprintf(stderr, "%s\n", s);
-	exit(1);
+	fprintf(stderr, ": %s (line %d)\n", s, yylineno);
+	exit(EXIT_FAILURE);
 }
 
 

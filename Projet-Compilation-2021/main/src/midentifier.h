@@ -1,26 +1,35 @@
-typedef struct MFun
+typedef struct FunStack
 {
 	char *name;
 	int args;
-	struct MFun *nextFun;
-} MFun;
+	struct FunStack *nextFun;
+} FunStack;
 
-
-typedef struct MVar
+typedef struct VarStack
 {
 	char *name;
-	struct MVar *nextVar;
-} MVar;
+	struct VarStack *nextVar;
+} VarStack;
+
+typedef struct NestingStack
+{
+	int nesting;
+	VarStack *varStack;
+	struct NestingStack *nextStack;
+} NestingStack;
 
 
-void addFun(MFun *fun, char *n, int nba);
 
-void addVar(MVar *var, char *n);
+FunStack *createFunStack(char *n, int nba, FunStack *next);
 
-int searchFun(MFun *fun, char *n, int nba);
+FunStack *addFun(FunStack *stack, char *n, int nba);
 
-int searchVar(MVar *var, char *n);
+void addVar(VarStack *var, char *n);
 
-void freeMVar(MVar *fst);
+int searchFun(FunStack *fun, char *n, int nba);
 
-void freeMFun(MFun *fst);
+int searchVar(VarStack *var, char *n);
+
+void freeVarStack(VarStack *fst);
+
+void freeFunStack(FunStack *fst);

@@ -7,6 +7,7 @@ IS                      (u|U|l|L)*
 
 %s                      COMMENT
 
+%option yylineno
 
 %{
 #include <stdio.h>
@@ -210,37 +211,38 @@ void buildTree(Node *root)
 
 
 
-MFun *createMFun(char *n, int nba)
+FunStack *createFunStack(char *n, int nba, FunStack *next)
 {
-    MFun *f = malloc(sizeof(MFun));
+    FunStack *f = malloc(sizeof(FunStack));
     f->name = strdup(n);
     f->args = nba;
-    f->nextFun = NULL;
+    f->nextFun = next;
     return f;
 }
 
-void addLastFun(MFun *stack, MFun *fun)
+void addLastFun(FunStack *stack, FunStack *fun)
 {
     if(stack->nextFun != NULL) addLastFun(stack->nextFun, fun);
     else stack->nextFun = fun;
 }
 
-void addFun(MFun *fun, char *n, int nba)
+FunStack *addFun(FunStack *stack, char *n, int nba)
 {
-    if(fun != NULL) addLastFun(fun, createMFun(n, nba));
-    else fun = createMFun(n, nba);
+    if(stack == NULL) stack = createFunStack(n, nba, NULL);
+    else addLastFun(stack, createFunStack(n, nba, NULL));
+    return stack;
 }
 
-int searchFun(MFun *fun, char *n, int nba)
+int searchFun(FunStack *fun, char *n, int nba)
 {
-    if(fun->nextFun == NULL) return -1;
     if(strcmp(fun->name, n) == 0 && fun->args == nba) return 0;
+    if(fun->nextFun == NULL) return -1;
     else searchFun(fun->nextFun, n, nba);
 }
 
-void freeMFun(MFun *fst)
+void freeFunStack(FunStack *fst)
 {
-    MFun *tmp;
+    FunStack *tmp;
     while(fst != NULL)
     {
         tmp = fst;
@@ -251,36 +253,36 @@ void freeMFun(MFun *fst)
 
 
 
-MVar *createMVar(char *n)
+VarStack *createVarStack(char *n)
 {
-    MVar *v = malloc(sizeof(MVar));
+    VarStack *v = malloc(sizeof(VarStack));
     v->name = strdup(n);
     v->nextVar = NULL;
     return v;
 }
 
-void addLastVar(MVar *stack, MVar *var)
+void addLastVar(VarStack *stack, VarStack *var)
 {
     if(stack->nextVar != NULL) addLastVar(stack->nextVar, var);
     else stack->nextVar = var;
 }
 
-void addVar(MVar *var, char *n)
+void addVar(VarStack *var, char *n)
 {
-    if(var != NULL) addLastVar(var, createMVar(n));
-    else var = createMVar(n);
+    if(var != NULL) addLastVar(var, createVarStack(n));
+    else var = createVarStack(n);
 }
 
-int searchVar(MVar *var, char *n)
+int searchVar(VarStack *var, char *n)
 {
     if(var->nextVar == NULL) return -1;
     if(strcmp(var->name, n) == 0) return 0;
     else searchVar(var->nextVar, n);
 }
 
-void freeMVar(MVar *fst)
+void freeVarStack(VarStack *fst)
 {
-    MVar *tmp;
+    VarStack *tmp;
     while(fst != NULL)
     {
         tmp = fst;
