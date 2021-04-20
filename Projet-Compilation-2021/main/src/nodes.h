@@ -29,6 +29,8 @@ Node *createTypedLeaf(char *v, NodeType nt);
 
 Node *setBrother(Node *n, Node *b);
 
+Node *setSon(Node *n, Node *s);
+
 void *setLastBrother(Node *n, Node *b);
 
 Node *specialSwitchNode(Node *expr, Node *bloc);

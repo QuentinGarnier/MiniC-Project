@@ -9,10 +9,11 @@
 	Node *root;
 
 	FunStack *funStack;
+	NestingStack *nestingStack;
 
-	/*NestingStack *varStacks;*/
-
-	int nesting = 0; //Count for nesting level
+	int nesting = 0; //Count for nesting level (0 = global)
+	char first = 0;  //Boolean for liste_declarations: 0 is global, 1 is start inside-bloc, else is start function
+	char inside = 0; //Boolean for functions' args
 	int count = 0;   //Count for functions' parameters
 	int count2 = 0;  //Count to verify the functions' numer of parameters
 %}
@@ -39,16 +40,16 @@
 	Node *node;
 }
 %type <str> binary_op binary_rel binary_comp type
-%type <node> liste_declarations liste_fonctions declaration fonction liste_declarateurs declarateur liste_parms liste_instructions liste_parms_content parm instruction iteration selection saut affectation bloc appel condition expression variable variableTab liste_expressions liste_expressions_content
+%type <node> liste_declarations liste_fonctions declaration fonction liste_declarateurs declarateur liste_parms liste_instructions liste_parms_content parm instruction iteration selection saut affectation bloc appel condition expression variable variableTab liste_expressions liste_expressions_content entete
 
 
 %%
 programme	:	
-		liste_declarations liste_fonctions																{root = createBinNode("root", $2, NULL); freeFunStack(funStack);}
+		liste_declarations liste_fonctions																{root = createBinNode("root", $2, NULL); freeFunStack(funStack); }
 ;
 liste_declarations	:	
 		liste_declarations declaration 																	{$$ = NULL;}
-	|																									{$$ = NULL;}
+	|																									{if(first == 0) {nestingStack = addNesting(nestingStack, nesting, NULL); first = 1; } else if(first == 1) { nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); } else first = 1; $$ = NULL;}
 ;
 liste_fonctions	:	
 		liste_fonctions fonction 																		{$$ = setBrother($2, $1);}
@@ -62,27 +63,29 @@ liste_declarateurs	:
 	|	declarateur 																					{$$ = NULL;}
 ;
 declarateur	:	
-		IDENTIFICATEUR 																					{$$ = NULL;}
+		IDENTIFICATEUR 																					{nestingStack = addVarToNesting(nestingStack, nesting, $1); $$ = NULL;}
 	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL;}
 ;
 fonction	:	
-		type IDENTIFICATEUR '(' liste_parms ')' bloc 													{funStack = addFun(funStack, $2, count); count = 0; $$ = createTypedNode(buildStr($2, buildStr(", ", $1)), $6, NULL, FUN_T);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{funStack = addFun(funStack, $3, count); count = 0; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
+		entete bloc 																					{first = 1; $$ = setSon($1, $2);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{funStack = addFun(funStack, $3, count); count = 0; first = 1; freeLastNestingStack(nestingStack); nesting--; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
 ;
+entete		:
+		type IDENTIFICATEUR '(' liste_parms ')'															{funStack = addFun(funStack, $2, count); count = 0; $$ = createTypedLeaf(buildStr($2, buildStr(", ", $1)), FUN_T);}
 type	:	
 		VOID 																							{$$ = "void";}
 	|	INT 																							{$$ = "int";}
 ;
 liste_parms	:	
-		liste_parms_content 																			{$$ = NULL;}
-	|																									{$$ = NULL;}
+		liste_parms_content 																			{inside = 0; $$ = NULL;}
+	|																									{nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); first = 2; $$ = NULL;}
 ;
 liste_parms_content	:
 		liste_parms_content ',' parm 																	{$$ = NULL;}
 	|	parm 																							{$$ = NULL;}
 ;
 parm	:	
-		INT IDENTIFICATEUR 																				{count++; $$ = NULL;}
+		INT IDENTIFICATEUR 																				{count++; if(inside == 0) {nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); first = 2; inside = 1;} nestingStack = addVarToNesting(nestingStack, nesting, $2); $$ = NULL;}
 ;
 liste_instructions :	
 		liste_instructions instruction 																	{$$ = setBrother($2, $1);}
@@ -116,7 +119,7 @@ affectation	:
 		variable '=' expression 																		{$$ = createBinNode(":=", $3, $1);}
 ;
 bloc	:	
-		'{' liste_declarations liste_instructions '}' 													{nesting--; $$ = createNode("BLOC", $3, NULL);}
+		'{' liste_declarations liste_instructions '}' 													{freeLastNestingStack(nestingStack); nesting--; $$ = createNode("BLOC", $3, NULL);}
 ;
 appel	:	
 		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{if(searchFun(funStack, $1, count2) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}

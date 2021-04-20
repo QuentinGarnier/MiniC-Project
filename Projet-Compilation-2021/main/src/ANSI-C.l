@@ -114,6 +114,12 @@ Node *setBrother(Node *n, Node *b)
     return n;
 }
 
+Node *setSon(Node *n, Node *s)
+{
+    n->nodeSon = s;
+    return n;
+}
+
 void *setLastBrother(Node *n, Node *b)
 {
     if(n->nodeBrother == NULL) n->nodeBrother = b;
@@ -253,11 +259,11 @@ void freeFunStack(FunStack *fst)
 
 
 
-VarStack *createVarStack(char *n)
+VarStack *createVar(char *n, VarStack *next)
 {
     VarStack *v = malloc(sizeof(VarStack));
     v->name = strdup(n);
-    v->nextVar = NULL;
+    v->nextVar = next;
     return v;
 }
 
@@ -267,26 +273,92 @@ void addLastVar(VarStack *stack, VarStack *var)
     else stack->nextVar = var;
 }
 
-void addVar(VarStack *var, char *n)
+VarStack *addVar(VarStack *stack, char *n)
 {
-    if(var != NULL) addLastVar(var, createVarStack(n));
-    else var = createVarStack(n);
+    if(stack == NULL) stack = createVar(n, NULL);
+    else addLastVar(stack, createVar(n, NULL));
+    return stack;
 }
 
 int searchVar(VarStack *var, char *n)
 {
-    if(var->nextVar == NULL) return -1;
     if(strcmp(var->name, n) == 0) return 0;
+    if(var->nextVar == NULL) return -1;
     else searchVar(var->nextVar, n);
 }
 
-void freeVarStack(VarStack *fst)
+void freeVarStack(VarStack *vst)
 {
     VarStack *tmp;
-    while(fst != NULL)
+    while(vst != NULL)
     {
-        tmp = fst;
-        fst = fst->nextVar;
+        tmp = vst;
+        vst = vst->nextVar;
+        free(tmp);
+    }
+}
+
+
+
+NestingStack *createNestingStack(int floor, VarStack *vars, NestingStack *next)
+{
+    NestingStack *nst = malloc(sizeof(NestingStack));
+    nst->nesting = floor;
+    nst->varStack = vars;
+    nst->nextStack = next;
+    return nst;
+}
+
+void addLastNestingStack(NestingStack *stack, NestingStack *nestingStack)
+{
+    if(stack->nextStack != NULL) addLastNestingStack(stack->nextStack, nestingStack);
+    else stack->nextStack = nestingStack;
+}
+
+NestingStack *addNesting(NestingStack *stack, int floor, VarStack *vars)
+{
+    if(stack == NULL) stack = createNestingStack(floor, vars, NULL);
+    else addLastNestingStack(stack, createNestingStack(floor, vars, NULL));
+    return stack;
+}
+
+void addToRightNesting(NestingStack *stack, int floor, char *n)
+{
+    if(stack != NULL) {
+        if(stack->nesting == floor) stack->varStack = addVar(stack->varStack, n);
+        else addToRightNesting(stack->nextStack, floor, n);
+    }
+}
+
+NestingStack *addVarToNesting(NestingStack *stack, int floor, char *n)
+{
+    if(stack == NULL) stack = createNestingStack(floor, createVar(n, NULL), NULL);
+    else addToRightNesting(stack, floor, n);
+    return stack;
+}
+
+int searchVarInNesting(NestingStack *nesting, char *n);
+
+void freeLastNestingStack(NestingStack *nst)
+{
+    if(nst->nextStack == NULL) nst->varStack = NULL;
+    else {
+        if(nst->nextStack->nextStack == NULL) {
+            nst->varStack = NULL;
+            nst->nextStack = NULL;
+        }
+        else freeLastNestingStack(nst->nextStack);
+    }
+}
+
+void freeNestingStack(NestingStack *nst)
+{
+    NestingStack *tmp;
+    while(nst != NULL)
+    {
+        freeVarStack(nst->varStack);
+        tmp = nst;
+        nst = nst->nextStack;
         free(tmp);
     }
 }

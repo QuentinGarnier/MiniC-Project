@@ -24,12 +24,28 @@ FunStack *createFunStack(char *n, int nba, FunStack *next);
 
 FunStack *addFun(FunStack *stack, char *n, int nba);
 
-void addVar(VarStack *var, char *n);
-
 int searchFun(FunStack *fun, char *n, int nba);
+
+void freeFunStack(FunStack *fst);
+
+
+VarStack *createVar(char *n, VarStack *next);
+
+VarStack *addVar(VarStack *stack, char *n);
 
 int searchVar(VarStack *var, char *n);
 
-void freeVarStack(VarStack *fst);
+void freeVarStack(VarStack *vst);
 
-void freeFunStack(FunStack *fst);
+
+NestingStack *createNestingStack(int floor, VarStack *varStack, NestingStack *next);
+
+NestingStack *addNesting(NestingStack *stack, int floor, VarStack *varStack);
+
+NestingStack *addVarToNesting(NestingStack *stack, int floor, char *n);
+
+int searchVarInNesting(NestingStack *nesting, char *n);
+
+void freeLastNestingStack(NestingStack *nst);
+
+void freeNestingStack(NestingStack *nst);
