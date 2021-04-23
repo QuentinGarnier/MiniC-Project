@@ -259,10 +259,11 @@ void freeFunStack(FunStack *fst)
 
 
 
-VarStack *createVar(char *n, VarStack *next)
+VarStack *createVar(char *n, int sz, VarStack *next)
 {
     VarStack *v = malloc(sizeof(VarStack));
     v->name = strdup(n);
+    v->size = sz;
     v->nextVar = next;
     return v;
 }
@@ -273,18 +274,24 @@ void addLastVar(VarStack *stack, VarStack *var)
     else stack->nextVar = var;
 }
 
-VarStack *addVar(VarStack *stack, char *n)
+VarStack *addVar(VarStack *stack, char *n, int sz)
 {
-    if(stack == NULL) stack = createVar(n, NULL);
-    else addLastVar(stack, createVar(n, NULL));
+    if(stack == NULL) stack = createVar(n, sz, NULL);
+    else addLastVar(stack, createVar(n, sz, NULL));
     return stack;
 }
 
-int searchVar(VarStack *var, char *n)
+VarStack *addFullVar(VarStack *stack, VarStack *var)
 {
-    if(strcmp(var->name, n) == 0) return 0;
-    if(var->nextVar == NULL) return -1;
-    else searchVar(var->nextVar, n);
+    if(stack == NULL) stack = var;
+    else addLastVar(stack, var);
+    return stack;
+}
+
+VarStack *changeSize(VarStack *stack, int sz)
+{
+    stack->size = sz;
+    return stack;
 }
 
 void freeVarStack(VarStack *vst)
@@ -322,29 +329,77 @@ NestingStack *addNesting(NestingStack *stack, int floor, VarStack *vars)
     return stack;
 }
 
-void addToRightNesting(NestingStack *stack, int floor, char *n)
+void addToRightNesting(NestingStack *stack, int floor, char *n, int sz)
 {
     if(stack != NULL) {
-        if(stack->nesting == floor) stack->varStack = addVar(stack->varStack, n);
-        else addToRightNesting(stack->nextStack, floor, n);
+        if(stack->nesting == floor) stack->varStack = addVar(stack->varStack, n, sz);
+        else addToRightNesting(stack->nextStack, floor, n, sz);
     }
 }
 
-NestingStack *addVarToNesting(NestingStack *stack, int floor, char *n)
+NestingStack *addVarToNesting(NestingStack *stack, int floor, char *n, int sz)
 {
-    if(stack == NULL) stack = createNestingStack(floor, createVar(n, NULL), NULL);
-    else addToRightNesting(stack, floor, n);
+    if(stack == NULL) stack = createNestingStack(floor, createVar(n, sz, NULL), NULL);
+    else addToRightNesting(stack, floor, n, sz);
     return stack;
 }
 
-int searchVarInNesting(NestingStack *nesting, char *n);
+void addFullToRightNesting(NestingStack *stack, int floor, VarStack *vst)
+{
+    if(stack != NULL) {
+        if(stack->nesting == floor) stack->varStack = addFullVar(stack->varStack, vst);
+        else addFullToRightNesting(stack->nextStack, floor, vst);
+    }
+}
+
+NestingStack *addFullVarToNesting(NestingStack *stack, int floor, VarStack *vst)
+{
+    if(stack == NULL) stack = createNestingStack(floor, vst, NULL);
+    else addFullToRightNesting(stack, floor, vst);
+    return stack;
+}
+
+
+
+char *nameLastBrother(Node *n)
+{
+    if(n->nodeBrother == NULL) return n->value;
+    else return nameLastBrother(n->nodeBrother);
+}
+
+int searchLocalVar(VarStack *var, char *n, int sz)
+{
+    if(var == NULL) return -1;
+    if(strcmp(var->name, n) == 0) {
+        if(var->size == 0 && sz ==0) return 0;
+        else if(var->size > 0 && var->size >= sz) return 0;
+        else return -1;
+    }
+    if(var->nextVar == NULL) return -1;
+    else searchLocalVar(var->nextVar, n, sz);
+}
+
+int searchVar(NestingStack *nst, char *n, int sz)
+{
+    if(nst->nextStack == NULL) {
+        if(nst->varStack == NULL) return -1;
+        else return searchLocalVar(nst->varStack, n, sz);
+    }
+    else {
+        if(searchVar(nst->nextStack, n, sz) == 0) return 0;
+        return searchLocalVar(nst->varStack, n, sz);
+    }
+}
 
 void freeLastNestingStack(NestingStack *nst)
 {
-    if(nst->nextStack == NULL) nst->varStack = NULL;
+    if(nst->nextStack == NULL) {
+        if(nst->nesting == 0) return;
+        else nst = NULL;
+    }
     else {
         if(nst->nextStack->nextStack == NULL) {
-            nst->varStack = NULL;
+            nst->nextStack->varStack = NULL;
             nst->nextStack = NULL;
         }
         else freeLastNestingStack(nst->nextStack);

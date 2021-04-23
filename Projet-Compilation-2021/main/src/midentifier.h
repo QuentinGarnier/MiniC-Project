@@ -8,6 +8,7 @@ typedef struct FunStack
 typedef struct VarStack
 {
 	char *name;
+	int size;
 	struct VarStack *nextVar;
 } VarStack;
 
@@ -29,11 +30,11 @@ int searchFun(FunStack *fun, char *n, int nba);
 void freeFunStack(FunStack *fst);
 
 
-VarStack *createVar(char *n, VarStack *next);
+VarStack *createVar(char *n, int size, VarStack *next);
 
-VarStack *addVar(VarStack *stack, char *n);
+VarStack *addVar(VarStack *stack, char *n, int size);
 
-int searchVar(VarStack *var, char *n);
+VarStack *changeSize(VarStack *stack, int size);
 
 void freeVarStack(VarStack *vst);
 
@@ -42,9 +43,11 @@ NestingStack *createNestingStack(int floor, VarStack *varStack, NestingStack *ne
 
 NestingStack *addNesting(NestingStack *stack, int floor, VarStack *varStack);
 
-NestingStack *addVarToNesting(NestingStack *stack, int floor, char *n);
+NestingStack *addVarToNesting(NestingStack *stack, int floor, char *n, int size);
 
-int searchVarInNesting(NestingStack *nesting, char *n);
+NestingStack *addFullVarToNesting(NestingStack *stack, int floor, VarStack *vst);
+
+int searchVar(NestingStack *nst, char *n, int size);
 
 void freeLastNestingStack(NestingStack *nst);
 

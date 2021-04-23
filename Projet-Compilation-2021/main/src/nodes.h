@@ -35,6 +35,8 @@ void *setLastBrother(Node *n, Node *b);
 
 Node *specialSwitchNode(Node *expr, Node *bloc);
 
+char *nameLastBrother(Node *n);
+
 char *buildStr(char *str1, char *str2);
 
 void nodeToDot(FILE* file, Node *n, int *id, int fatherID);

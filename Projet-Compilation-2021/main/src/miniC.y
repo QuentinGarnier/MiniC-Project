@@ -12,10 +12,12 @@
 	NestingStack *nestingStack;
 
 	int nesting = 0; //Count for nesting level (0 = global)
+	char error = 0;  //Error detected  (0 = false)
 	char first = 0;  //Boolean for liste_declarations: 0 is global, 1 is start inside-bloc, else is start function
 	char inside = 0; //Boolean for functions' args
 	int count = 0;   //Count for functions' parameters
 	int count2 = 0;  //Count to verify the functions' numer of parameters
+	int size = 0;    //Size to verify variables type (array or not, and array's dimensions); 0 for variables
 %}
 
 
@@ -38,9 +40,11 @@
 	int integer;
 	char *str;
 	Node *node;
+	VarStack *varStack;
 }
 %type <str> binary_op binary_rel binary_comp type
 %type <node> liste_declarations liste_fonctions declaration fonction liste_declarateurs declarateur liste_parms liste_instructions liste_parms_content parm instruction iteration selection saut affectation bloc appel condition expression variable variableTab liste_expressions liste_expressions_content entete
+%type<varStack> declarateur_tab
 
 
 %%
@@ -49,7 +53,7 @@ programme	:
 ;
 liste_declarations	:	
 		liste_declarations declaration 																	{$$ = NULL;}
-	|																									{if(first == 0) {nestingStack = addNesting(nestingStack, nesting, NULL); first = 1; } else if(first == 1) { nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); } else first = 1; $$ = NULL;}
+	|																									{if(first == 0) {nestingStack = addNesting(nestingStack, nesting, NULL); first = 1;} else if(first == 1) { nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); } else first = 1; $$ = NULL;}
 ;
 liste_fonctions	:	
 		liste_fonctions fonction 																		{$$ = setBrother($2, $1);}
@@ -63,8 +67,12 @@ liste_declarateurs	:
 	|	declarateur 																					{$$ = NULL;}
 ;
 declarateur	:	
-		IDENTIFICATEUR 																					{nestingStack = addVarToNesting(nestingStack, nesting, $1); $$ = NULL;}
-	|	declarateur '[' CONSTANTE ']' 																	{$$ = NULL;}
+		IDENTIFICATEUR 																					{nestingStack = addVarToNesting(nestingStack, nesting, $1, 0); $$ = NULL;}
+	|	declarateur_tab '[' CONSTANTE ']' 																{nestingStack = addFullVarToNesting(nestingStack, nesting, changeSize($1, size)); size = 0; $$ = NULL;}
+;
+declarateur_tab	:	
+		IDENTIFICATEUR 																					{size++; $$ = createVar($1, 1, NULL);}
+	|	declarateur_tab '[' CONSTANTE ']' 																{size++; $$ = $1;}
 ;
 fonction	:	
 		entete bloc 																					{first = 1; $$ = setSon($1, $2);}
@@ -85,7 +93,7 @@ liste_parms_content	:
 	|	parm 																							{$$ = NULL;}
 ;
 parm	:	
-		INT IDENTIFICATEUR 																				{count++; if(inside == 0) {nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); first = 2; inside = 1;} nestingStack = addVarToNesting(nestingStack, nesting, $2); $$ = NULL;}
+		INT IDENTIFICATEUR 																				{count++; if(inside == 0) {nesting++; nestingStack = addNesting(nestingStack, nesting, NULL); first = 2; inside = 1;} nestingStack = addVarToNesting(nestingStack, nesting, $2, 0); $$ = NULL;}
 ;
 liste_instructions :	
 		liste_instructions instruction 																	{$$ = setBrother($2, $1);}
@@ -125,12 +133,12 @@ appel	:
 		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{if(searchFun(funStack, $1, count2) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 variable	:	
-		IDENTIFICATEUR 																					{$$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{$$ = createNode("TAB", setBrother($3, $1), NULL);}
+		IDENTIFICATEUR 																					{if(searchVar(nestingStack, $1, 0) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("variable undefined"); } $$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{if(searchVar(nestingStack, nameLastBrother($1), size) != 0) { fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("variable undefined or called with wrong dimensions"); } size = 0; $$ = createNode("TAB", setBrother($3, $1), NULL);}
 ;
 variableTab	:	
-		IDENTIFICATEUR 																					{$$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{$$ = setBrother($3,  $1);}
+		IDENTIFICATEUR 																					{size++; $$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{size++; $$ = setBrother($3,  $1);}
 ;
 expression	:	
 		'(' expression ')' 																				{$$ = $2;}
@@ -182,12 +190,13 @@ binary_comp	:
 
 int yyerror(char *s) {
 	fprintf(stderr, ": %s (line %d)\n", s, yylineno);
-	exit(EXIT_FAILURE);
+	error = 1;
 }
 
 
 int main() {
 	yyparse();
-	buildTree(root);
+	if(error == 0) buildTree(root);
+	else exit(EXIT_FAILURE);
 	return 0;
 }
