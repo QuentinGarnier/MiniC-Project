@@ -1,7 +1,13 @@
+typedef enum
+{
+	F_INT, F_VOID
+} FType;
+
 typedef struct FunStack
 {
 	char *name;
 	int args;
+	FType type;
 	struct FunStack *nextFun;
 } FunStack;
 
@@ -21,13 +27,15 @@ typedef struct NestingStack
 
 
 
-FunStack *createFunStack(char *n, int nba, FunStack *next);
+FunStack *createFunStack(char *n, int nba, FType t, FunStack *next);
 
-FunStack *addFun(FunStack *stack, char *n, int nba);
+FunStack *addFun(FunStack *stack, char *n, int nba, FType t);
 
 int searchFun(FunStack *fun, char *n, int nba);
 
 void freeFunStack(FunStack *fst);
+
+FType ftypeFor(char *t);
 
 
 VarStack *createVar(char *n, int size, VarStack *next);

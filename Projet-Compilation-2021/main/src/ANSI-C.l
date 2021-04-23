@@ -217,12 +217,19 @@ void buildTree(Node *root)
 
 
 
-FunStack *createFunStack(char *n, int nba, FunStack *next)
+FType ftypeFor(char *t)
+{
+    if(strcmp(t, "int") == 0) return F_INT;
+    else return F_VOID;
+}
+
+FunStack *createFunStack(char *n, int nba, FType t, FunStack *next)
 {
     FunStack *f = malloc(sizeof(FunStack));
     f->name = strdup(n);
     f->args = nba;
     f->nextFun = next;
+    f->type = t;
     return f;
 }
 
@@ -232,16 +239,19 @@ void addLastFun(FunStack *stack, FunStack *fun)
     else stack->nextFun = fun;
 }
 
-FunStack *addFun(FunStack *stack, char *n, int nba)
+FunStack *addFun(FunStack *stack, char *n, int nba, FType t)
 {
-    if(stack == NULL) stack = createFunStack(n, nba, NULL);
-    else addLastFun(stack, createFunStack(n, nba, NULL));
+    if(stack == NULL) stack = createFunStack(n, nba, t, NULL);
+    else addLastFun(stack, createFunStack(n, nba, t, NULL));
     return stack;
 }
 
 int searchFun(FunStack *fun, char *n, int nba)
 {
-    if(strcmp(fun->name, n) == 0 && fun->args == nba) return 0;
+    if(strcmp(fun->name, n) == 0 && fun->args == nba) {
+        if(fun->type == F_INT) return 0;
+        else return 1;
+    }
     if(fun->nextFun == NULL) return -1;
     else searchFun(fun->nextFun, n, nba);
 }

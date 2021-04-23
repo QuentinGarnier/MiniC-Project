@@ -11,6 +11,7 @@
 	FunStack *funStack;
 	NestingStack *nestingStack;
 
+	FType ftype = F_VOID;
 	int nesting = 0; //Count for nesting level (0 = global)
 	char error = 0;  //Error detected  (0 = false)
 	char first = 0;  //Boolean for liste_declarations: 0 is global, 1 is start inside-bloc, else is start function
@@ -75,11 +76,11 @@ declarateur_tab	:
 	|	declarateur_tab '[' CONSTANTE ']' 																{size++; $$ = $1;}
 ;
 fonction	:	
-		entete bloc 																					{first = 1; $$ = setSon($1, $2);}
-	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{funStack = addFun(funStack, $3, count); count = 0; first = 1; freeLastNestingStack(nestingStack); nesting--; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
+		entete bloc 																					{first = 1; ftype = F_VOID; $$ = setSon($1, $2);}
+	|	EXTERN type IDENTIFICATEUR '(' liste_parms ')' ';' 												{funStack = addFun(funStack, $3, count, ftypeFor($2)); count = 0; first = 1; freeLastNestingStack(nestingStack); nesting--; $$ = createTypedLeaf(buildStr($3, buildStr(", ", $2)), FUN_T);}
 ;
 entete		:
-		type IDENTIFICATEUR '(' liste_parms ')'															{funStack = addFun(funStack, $2, count); count = 0; $$ = createTypedLeaf(buildStr($2, buildStr(", ", $1)), FUN_T);}
+		type IDENTIFICATEUR '(' liste_parms ')'															{funStack = addFun(funStack, $2, count, ftypeFor($1)); count = 0; ftype = ftypeFor($1); $$ = createTypedLeaf(buildStr($2, buildStr(", ", $1)), FUN_T);}
 type	:	
 		VOID 																							{$$ = "void";}
 	|	INT 																							{$$ = "int";}
@@ -120,8 +121,8 @@ selection	:
 ;
 saut	:	
 		BREAK ';' 																						{$$ = createTypedLeaf("BREAK", BREAK_T);}
-	|	RETURN ';' 																						{$$ = createTypedLeaf("RETURN", RETURN_T);}
-	|	RETURN expression ';' 																			{$$ = createTypedNode("RETURN", $2, NULL, RETURN_T);}
+	|	RETURN ';' 																						{if(ftype != F_VOID) { fprintf(stderr, "Error on 'return' instruction"); yyerror("a value is expected"); } $$ = createTypedLeaf("RETURN", RETURN_T);}
+	|	RETURN expression ';' 																			{if(ftype == F_VOID) { fprintf(stderr, "Error on 'return' instruction"); yyerror("no value is expected in a void function"); } $$ = createTypedNode("RETURN", $2, NULL, RETURN_T);}
 ;
 affectation	:	
 		variable '=' expression 																		{$$ = createBinNode(":=", $3, $1);}
@@ -130,7 +131,7 @@ bloc	:
 		'{' liste_declarations liste_instructions '}' 													{freeLastNestingStack(nestingStack); nesting--; $$ = createNode("BLOC", $3, NULL);}
 ;
 appel	:	
-		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{if(searchFun(funStack, $1, count2) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
+		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{if(searchFun(funStack, $1, count2) < 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 variable	:	
 		IDENTIFICATEUR 																					{if(searchVar(nestingStack, $1, 0) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("variable undefined"); } $$ = createLeaf($1);}
@@ -146,7 +147,7 @@ expression	:
 	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
 	|	CONSTANTE 																						{char s[10]; sprintf(s, "%d", $1); $$ = createLeaf(s);}
 	|	variable 																						{$$ = $1;}
-	|	IDENTIFICATEUR '(' liste_expressions ')' 														{if(searchFun(funStack, $1, count2) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
+	|	IDENTIFICATEUR '(' liste_expressions ')' 														{switch(searchFun(funStack, $1, count2)) {case 1: fprintf(stderr, "Error on %s", $1); yyerror("not a number"); break; case -1: fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); break; default: break;} count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 liste_expressions	:	
 		liste_expressions_content 																		{$$ = $1;}
