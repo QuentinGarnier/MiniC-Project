@@ -381,8 +381,8 @@ int searchLocalVar(VarStack *var, char *n, int sz)
 {
     if(var == NULL) return -1;
     if(strcmp(var->name, n) == 0) {
-        if(var->size == 0 && sz ==0) return 0;
-        else if(var->size > 0 && var->size >= sz) return 0;
+        if(var->size == sz) return 0;
+        else if(var->size > sz) return 1;
         else return -1;
     }
     if(var->nextVar == NULL) return -1;
@@ -396,7 +396,11 @@ int searchVar(NestingStack *nst, char *n, int sz)
         else return searchLocalVar(nst->varStack, n, sz);
     }
     else {
-        if(searchVar(nst->nextStack, n, sz) == 0) return 0;
+        switch(searchVar(nst->nextStack, n, sz)) {
+            case 0: return 0;
+            case 1: return 1;
+            default: break;
+        }
         return searchLocalVar(nst->varStack, n, sz);
     }
 }

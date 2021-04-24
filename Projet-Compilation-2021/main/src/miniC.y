@@ -19,6 +19,7 @@
 	int count = 0;   //Count for functions' parameters
 	int count2 = 0;  //Count to verify the functions' numer of parameters
 	int size = 0;    //Size to verify variables type (array or not, and array's dimensions); 0 for variables
+	int sizeExp = 0; //Size for specific case of var inside array dimensions
 %}
 
 
@@ -134,12 +135,12 @@ appel	:
 		IDENTIFICATEUR '(' liste_expressions ')' ';'  													{if(searchFun(funStack, $1, count2) < 0) { fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); } count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
 ;
 variable	:	
-		IDENTIFICATEUR 																					{if(searchVar(nestingStack, $1, 0) != 0) { fprintf(stderr, "Error on %s", $1); yyerror("variable undefined"); } $$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{if(searchVar(nestingStack, nameLastBrother($1), size) != 0) { fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("variable undefined or called with wrong dimensions"); } size = 0; $$ = createNode("TAB", setBrother($3, $1), NULL);}
+		IDENTIFICATEUR 																					{switch(searchVar(nestingStack, $1, 0)) {case -1: fprintf(stderr, "Error on %s", $1); yyerror("variable undefined or called with wrong dimensions"); break; case 1: fprintf(stderr, "Error on %s", $1); yyerror("a value was expected, found an array"); break; default: break;} $$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{switch(searchVar(nestingStack, nameLastBrother($1), sizeExp > 0 ? sizeExp : size)) {case -1: fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("variable undefined or called with wrong dimensions"); break; case 1: fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("a value was expected, found an array"); break; default: break;} if(sizeExp == 0) size = 0; sizeExp = 0; $$ = createNode("TAB", setBrother($3, $1), NULL);}
 ;
 variableTab	:	
-		IDENTIFICATEUR 																					{size++; $$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{size++; $$ = setBrother($3,  $1);}
+		IDENTIFICATEUR 																					{size > 0 ? sizeExp++ : size++; $$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{sizeExp > 0 ? sizeExp++ : size++; $$ = setBrother($3,  $1);}
 ;
 expression	:	
 		'(' expression ')' 																				{$$ = $2;}
@@ -190,6 +191,7 @@ binary_comp	:
 
 
 int yyerror(char *s) {
+	if(strcmp(s, "syntax error") == 0) fprintf(stderr, "Error");
 	fprintf(stderr, ": %s (line %d)\n", s, yylineno);
 	error = 1;
 }
