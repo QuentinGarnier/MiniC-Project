@@ -27,10 +27,11 @@
 %token <integer> CONSTANTE
 %token <str> BREAK RETURN PLUS MOINS MUL DIV LSHIFT RSHIFT BAND BOR LAND LOR LT GT 
 %token <str> GEQ LEQ EQ NEQ NOT EXTERN
+%left BOR
+%left BAND
+%left LSHIFT RSHIFT
 %left PLUS MOINS
 %left MUL DIV
-%left LSHIFT RSHIFT
-%left BOR BAND
 %left LAND LOR
 %nonassoc THEN
 %nonassoc ELSE
@@ -44,7 +45,7 @@
 	Node *node;
 	VarStack *varStack;
 }
-%type <str> binary_op binary_rel binary_comp type
+%type <str> binary_rel binary_comp type
 %type <node> liste_declarations liste_fonctions declaration fonction liste_declarateurs declarateur liste_parms liste_instructions liste_parms_content parm instruction iteration selection saut affectation bloc appel condition expression variable variableTab liste_expressions liste_expressions_content entete
 %type<varStack> declarateur_tab
 
@@ -144,8 +145,15 @@ variableTab	:
 ;
 expression	:	
 		'(' expression ')' 																				{$$ = $2;}
-	|	expression binary_op expression %prec OP 														{$$ = createBinNode($2, $3, $1);}
-	|	MOINS expression 																				{$$ = createNode("-", $2, NULL);}
+	|	expression LSHIFT expression  																	{$$ = createBinNode("<<", $3, $1);}
+	|	expression RSHIFT expression  																	{$$ = createBinNode(">>", $3, $1);}
+	|	expression BOR expression  																		{$$ = createBinNode("|", $3, $1);}
+	|	expression BAND expression  																	{$$ = createBinNode("&", $3, $1);}
+	|	expression PLUS expression  																	{$$ = createBinNode("+", $3, $1);}
+	|	expression MOINS expression  																	{$$ = createBinNode("-", $3, $1);}
+	|	expression MUL expression  																		{$$ = createBinNode("*", $3, $1);}
+	|	expression DIV expression  																		{$$ = createBinNode("/", $3, $1);}
+	|	MOINS expression %prec OP 																		{$$ = createNode("-", $2, NULL);}
 	|	CONSTANTE 																						{char s[10]; sprintf(s, "%d", $1); $$ = createLeaf(s);}
 	|	variable 																						{$$ = $1;}
 	|	IDENTIFICATEUR '(' liste_expressions ')' 														{switch(searchFun(funStack, $1, count2)) {case 1: fprintf(stderr, "Error on %s", $1); yyerror("not a number"); break; case -1: fprintf(stderr, "Error on %s", $1); yyerror("function undefined or has wrong number of arguments"); break; default: break;} count2 = 0; $$ = createTypedNode($1, $3, NULL, CALL_FUN_T);}
@@ -163,16 +171,6 @@ condition	:
 	|	condition binary_rel condition %prec REL 														{$$ = createBinNode($2, $3, $1);}
 	|	'(' condition ')' 																				{$$ = $2;}
 	|	expression binary_comp expression 																{$$ = createBinNode($2, $3, $1);}
-;
-binary_op	:	
-		PLUS 																							{$$ = "+";}
-	|       MOINS 																						{$$ = "-";}
-	|	MUL 																							{$$ = "*";}
-	|	DIV 																							{$$ = "/";}
-	|       LSHIFT 																						{$$ = "<<";}
-	|       RSHIFT 																						{$$ = ">>";}
-	|	BAND 																							{$$ = "&";}
-	|	BOR 																							{$$ = "|";}
 ;
 binary_rel	:	
 		LAND 																							{$$ = "&&";}
