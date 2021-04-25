@@ -12,6 +12,7 @@
 	NestingStack *nestingStack;
 
 	FType ftype = F_VOID;
+	ChainedInt *chainedInt;
 	int nesting = 0; //Count for nesting level (0 = global)
 	char error = 0;  //Error detected  (0 = false)
 	char first = 0;  //Boolean for liste_declarations: 0 is global, 1 is start inside-bloc, else is start function
@@ -137,11 +138,11 @@ appel	:
 ;
 variable	:	
 		IDENTIFICATEUR 																					{switch(searchVar(nestingStack, $1, 0)) {case -1: fprintf(stderr, "Error on %s", $1); yyerror("variable undefined or called with wrong dimensions"); break; case 1: fprintf(stderr, "Error on %s", $1); yyerror("a value was expected, found an array"); break; default: break;} $$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{switch(searchVar(nestingStack, nameLastBrother($1), sizeExp > 0 ? sizeExp : size)) {case -1: fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("variable undefined or called with wrong dimensions"); break; case 1: fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("a value was expected, found an array"); break; default: break;} if(sizeExp == 0) size = 0; sizeExp = 0; $$ = createNode("TAB", setBrother($3, $1), NULL);}
+	|	variableTab '[' expression ']' 																	{switch(searchVar(nestingStack, nameLastBrother($1), sizeOfLastInt(chainedInt))) {case -1: fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("variable undefined or called with wrong dimensions"); break; case 1: fprintf(stderr, "Error on %s", nameLastBrother($1)); yyerror("a value was expected, found an array"); break; default: break;} freeLastInt(chainedInt); $$ = createNode("TAB", setBrother($3, $1), NULL);}
 ;
 variableTab	:	
-		IDENTIFICATEUR 																					{size > 0 ? sizeExp++ : size++; $$ = createLeaf($1);}
-	|	variableTab '[' expression ']' 																	{sizeExp > 0 ? sizeExp++ : size++; $$ = setBrother($3,  $1);}
+		IDENTIFICATEUR 																					{chainedInt = addChainedInt(chainedInt, 1); $$ = createLeaf($1);}
+	|	variableTab '[' expression ']' 																	{incrementsLastInt(chainedInt); $$ = setBrother($3,  $1);}
 ;
 expression	:	
 		'(' expression ')' 																				{$$ = $2;}

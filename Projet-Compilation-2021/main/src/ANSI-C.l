@@ -427,3 +427,53 @@ void freeNestingStack(NestingStack *nst)
         free(tmp);
     }
 }
+
+
+
+ChainedInt *createChainedInt(int v)
+{
+    ChainedInt *c = malloc(sizeof(ChainedInt));
+    c->value = v;
+    c->next = NULL;
+    return c;
+}
+
+void addLastInt(ChainedInt *chain, int v)
+{
+    if(chain->next != NULL) addLastInt(chain->next, v);
+    else chain->next = createChainedInt(v);
+}
+
+ChainedInt *addChainedInt(ChainedInt *chain, int v)
+{
+    if(chain == NULL) chain = addChainedInt(createChainedInt(-1), v);
+    else addLastInt(chain, v);
+    return chain;
+}
+
+void *incrementsLastInt(ChainedInt *chain)
+{
+    if(chain->next == NULL) {
+        chain->value = chain->value + 1;
+    }
+    else incrementsLastInt(chain->next);
+}
+
+int sizeOfLastInt(ChainedInt *chain)
+{
+    if(chain->next == NULL) return chain->value;
+    else return sizeOfLastInt(chain->next);
+}
+
+void freeLastInt(ChainedInt *chain)
+{
+    if(chain->next == NULL) {
+        chain->value = 0;
+        chain = NULL;
+    }
+    else if(chain->next->next == NULL) {
+        chain->next->value = 0;
+        chain->next = NULL;
+    }
+    else freeLastInt(chain->next);
+}

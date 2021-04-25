@@ -25,6 +25,12 @@ typedef struct NestingStack
 	struct NestingStack *nextStack;
 } NestingStack;
 
+typedef struct ChainedInt
+{
+	int value;
+	struct ChainedInt *next;
+} ChainedInt;
+
 
 
 FunStack *createFunStack(char *n, int nba, FType t, FunStack *next);
@@ -38,6 +44,7 @@ void freeFunStack(FunStack *fst);
 FType ftypeFor(char *t);
 
 
+
 VarStack *createVar(char *n, int size, VarStack *next);
 
 VarStack *addVar(VarStack *stack, char *n, int size);
@@ -45,6 +52,7 @@ VarStack *addVar(VarStack *stack, char *n, int size);
 VarStack *changeSize(VarStack *stack, int size);
 
 void freeVarStack(VarStack *vst);
+
 
 
 NestingStack *createNestingStack(int floor, VarStack *varStack, NestingStack *next);
@@ -60,3 +68,15 @@ int searchVar(NestingStack *nst, char *n, int size);
 void freeLastNestingStack(NestingStack *nst);
 
 void freeNestingStack(NestingStack *nst);
+
+
+
+ChainedInt *createChainedInt(int v);
+
+ChainedInt *addChainedInt(ChainedInt *chain, int v);
+
+void *incrementsLastInt(ChainedInt *chain);
+
+int sizeOfLastInt(ChainedInt *chain);
+
+void freeLastInt(ChainedInt *chain);
